@@ -1,5 +1,10 @@
-node_modules/
-dist/
+app/node_modules/
+app/dist/
+app/out/
+web/node_modules/
+web/.next/
+web/dist/
+docs/node_modules/
+docs/.vitepress/dist/
 .DS_Store
-out/
 .last-branch

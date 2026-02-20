@@ -1,10 +1,12 @@
-# PRD: Code Review Tool (Electron + React + Bun)
+# PRD: OpenReview (Electron + React + Bun)
 
 ## Introduction
 
-A desktop code review tool built with Electron, React, and Bun. It opens a git repository, shows changed files (staged and unstaged), renders a diff view, and lets the user write free-text comments on specific lines. At the end, the user copies a structured plain-text review (file path + line number + comment) to paste into Claude or any AI assistant for fixes.
+OpenReview is a desktop code review tool built with Electron, React, and Bun. It opens a git repository, shows changed files (staged and unstaged), renders a diff view, and lets the user write free-text comments on specific lines. At the end, the user copies a structured plain-text review (file path + line number + comment) to paste into Claude or any AI assistant for fixes.
 
 The tool is language/framework agnostic — it works on any git repository regardless of tech stack.
+
+The Electron app lives under `app/` in the monorepo. The repo root is reserved for future `web/` (landing page) and `docs/` (documentation site).
 
 ---
 
@@ -194,27 +196,42 @@ The tool must handle large real-world repos without degradation. The following c
 - App shell (window + sidebar skeleton) must render before git diff completes.
 - Show a loading skeleton in the diff view while the git IPC call is in flight.
 
-### Suggested Project Structure
+### Repo Structure
+
+The repo root is a monorepo. The Electron app lives under `app/`. Future packages (`web/`, `docs/`) will sit alongside it.
+
 ```
-codereview/
-├── src/
-│   ├── main/           # Electron main process
-│   │   ├── index.ts    # App entry, window creation
-│   │   └── git.ts      # Git command wrappers (diff, add, restore)
-│   ├── renderer/       # React app
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   │   ├── Sidebar.tsx       # File tree
-│   │   │   ├── DiffView.tsx      # Main diff panel
-│   │   │   ├── DiffLine.tsx      # Single line with gutter + comment
-│   │   │   ├── CommentBox.tsx    # Inline comment editor
-│   │   │   └── Toolbar.tsx       # Top bar with Copy Review button
-│   │   └── store/
-│   │       └── comments.ts       # Comment state (Zustand)
-│   └── shared/
-│       └── types.ts    # Shared types between main and renderer
-├── package.json
-└── bunfig.toml
+openreview/              # repo root
+├── app/                 # Electron desktop app (OpenReview)
+│   ├── src/
+│   │   ├── main/           # Electron main process
+│   │   │   ├── index.ts    # App entry, window creation
+│   │   │   └── git.ts      # Git command wrappers (diff, add, restore)
+│   │   ├── renderer/       # React app
+│   │   │   ├── App.tsx
+│   │   │   ├── components/
+│   │   │   │   ├── Sidebar.tsx       # File tree
+│   │   │   │   ├── DiffView.tsx      # Main diff panel
+│   │   │   │   ├── DiffLine.tsx      # Single line with gutter + comment
+│   │   │   │   ├── CommentBox.tsx    # Inline comment editor
+│   │   │   │   └── Toolbar.tsx       # Top bar with Copy Review button
+│   │   │   ├── store/
+│   │   │   │   ├── repo.ts           # Repo/file state (Zustand)
+│   │   │   │   └── comments.ts       # Comment state (Zustand)
+│   │   │   ├── hooks/
+│   │   │   │   └── useHighlighter.ts # Web Worker bridge for shiki
+│   │   │   └── workers/
+│   │   │       └── highlighter.worker.ts
+│   │   └── shared/
+│   │       └── types.ts    # Shared types between main and renderer
+│   ├── package.json
+│   └── bunfig.toml
+├── web/                 # Landing page (future)
+├── docs/                # Documentation site (future)
+├── prd.json             # Ralph config
+├── CLAUDE.md            # Ralph per-iteration prompt
+├── ralph.sh             # Ralph runner
+└── .gitignore
 ```
 
 ---
