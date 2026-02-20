@@ -1,5 +1,5 @@
 import { useEffect, useRef, useReducer } from 'react'
-import type { DiffLine, DiffFile } from '../../shared/types'
+import type { DiffFile } from '../../shared/types'
 
 function getLang(filePath: string): string {
   const ext = filePath.split('.').pop()?.toLowerCase() ?? ''
@@ -35,11 +35,9 @@ function getLang(filePath: string): string {
 }
 
 export function useHighlighter(
-  lines: DiffLine[],
-  selectedFile: DiffFile | null,
-  visibleStartIndex: number,
-  visibleEndIndex: number,
-): Map<number, string> {
+  files: DiffFile[],
+  visibleLineItems: Array<{ filePath: string; fileLineIndex: number }>,
+): Map<string, Map<number, string>> {
   const workerRef = useRef<Worker | null>(null)
   // Cache keyed by filePath → Map<lineIndex, html>
   const cacheRef = useRef<Map<string, Map<number, string>>>(new Map())
@@ -77,35 +75,37 @@ export function useHighlighter(
     }
   }, [])
 
-  // Send visible lines (±20) to worker for highlighting
+  // Send visible lines to worker for highlighting
   useEffect(() => {
-    if (!selectedFile || !workerRef.current) return
+    if (!workerRef.current || visibleLineItems.length === 0) return
 
-    const lang = getLang(selectedFile.filePath)
-    const filePath = selectedFile.filePath
     const worker = workerRef.current
+    const fileMap = new Map(
+      files.map((f) => [
+        f.filePath,
+        { allLines: f.hunks.flatMap((h) => h.lines), lang: getLang(f.filePath) },
+      ]),
+    )
 
-    const start = Math.max(0, visibleStartIndex - 20)
-    const end = Math.min(lines.length - 1, visibleEndIndex + 20)
-
-    for (let i = start; i <= end; i++) {
-      const line = lines[i]
-      if (!line || line.type === 'hunk-header') continue
-
-      const cacheKey = `${filePath}:${i}`
+    for (const { filePath, fileLineIndex } of visibleLineItems) {
+      const cacheKey = `${filePath}:${fileLineIndex}`
       if (
-        cacheRef.current.get(filePath)?.has(i) ||
+        cacheRef.current.get(filePath)?.has(fileLineIndex) ||
         pendingRef.current.has(cacheKey)
       ) {
         continue
       }
 
-      pendingRef.current.add(cacheKey)
-      // Strip the diff marker (+/-/space) before highlighting
-      worker.postMessage({ id: cacheKey, code: line.content.slice(1), lang })
-    }
-  }, [lines, selectedFile, visibleStartIndex, visibleEndIndex])
+      const fileInfo = fileMap.get(filePath)
+      if (!fileInfo) continue
 
-  if (!selectedFile) return new Map<number, string>()
-  return cacheRef.current.get(selectedFile.filePath) ?? new Map<number, string>()
+      const line = fileInfo.allLines[fileLineIndex]
+      if (!line || line.type === 'hunk-header') continue
+
+      pendingRef.current.add(cacheKey)
+      worker.postMessage({ id: cacheKey, code: line.content.slice(1), lang: fileInfo.lang })
+    }
+  }, [files, visibleLineItems])
+
+  return cacheRef.current
 }

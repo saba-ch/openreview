@@ -4,6 +4,7 @@ import { useRepoStore } from '../store/repo'
 import { useCommentsStore } from '../store/comments'
 import { DiffFile, DiffLine as DiffLineType } from '../../shared/types'
 import DiffLineComponent from './DiffLine'
+import { useHighlighter } from '../hooks/useHighlighter'
 
 function parseHunkRange(header: string): { oldStart: number; oldCount: number } | null {
   const m = header.match(/@@ -(\d+)(?:,(\d+))?/)
@@ -101,6 +102,23 @@ export default function DiffView(): React.ReactElement {
   const virtualizerRef = useRef(virtualizer)
   virtualizerRef.current = virtualizer
 
+  // Compute buffered visible line items for syntax highlighting.
+  // getVirtualItems() must be called inline (not memoized on [virtualizer]) because
+  // the virtualizer object reference is stable — memoizing it would snapshot the
+  // initial empty state and never update on scroll.
+  const _vItems = virtualizer.getVirtualItems()
+  const _firstIdx = _vItems[0]?.index ?? 0
+  const _lastIdx = _vItems.at(-1)?.index ?? 0
+
+  const visibleLineItems = useMemo(() => {
+    const buffered = items.slice(Math.max(0, _firstIdx - 20), _lastIdx + 21)
+    return buffered
+      .filter((item): item is Extract<ViewItem, { kind: 'line' }> => item.kind === 'line')
+      .map((item) => ({ filePath: item.file.filePath, fileLineIndex: item.fileLineIndex }))
+  }, [items, _firstIdx, _lastIdx])
+
+  const highlightMap = useHighlighter(files, visibleLineItems)
+
   // Scroll to selected file when sidebar selection changes
   useEffect(() => {
     if (!selectedFile) return
@@ -168,7 +186,7 @@ export default function DiffView(): React.ReactElement {
                 line={line}
                 lineIndex={fileLineIndex}
                 filePath={file.filePath}
-                highlightHtml={undefined}
+                highlightHtml={highlightMap.get(file.filePath)?.get(fileLineIndex)}
                 hasComment={!!comment}
                 comment={comment}
                 isCommentOpen={openCommentKey === itemKey}
