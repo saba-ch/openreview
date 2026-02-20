@@ -1,0 +1,23 @@
+# Ralph Progress Log
+Started: Fri Feb 20 19:12:04 CET 2026
+---
+
+## Codebase Patterns
+- Use `electron-vite` for building: main/preload use SSR bundle mode, renderer uses standard Vite build
+- electron-vite renderer root is `src/renderer/` — `index.html` script src must be relative (`./main.tsx`), not absolute (`/src/renderer/main.tsx`)
+- `"type": "module"` in package.json is needed to avoid Node ESM warnings with `postcss.config.js`
+- Typecheck command: `tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json`
+- Build output goes to `out/` (electron-vite default), not `dist/`
+
+## 2026-02-20 - US-001
+- Scaffolded Electron + React + Bun + Tailwind project from scratch
+- Created: package.json, bunfig.toml, electron.vite.config.ts, tsconfig.json, tsconfig.node.json, tsconfig.web.json, tailwind.config.js, postcss.config.js
+- Created: src/main/index.ts (BrowserWindow, loads renderer), src/preload/index.ts (contextBridge stub)
+- Created: src/renderer/index.html, src/renderer/main.tsx, src/renderer/App.tsx, src/renderer/index.css
+- Created: src/shared/types.ts (placeholder comment)
+- **Learnings for future iterations:**
+  - electron-vite handles main, preload, renderer as separate Vite builds
+  - Renderer index.html script path must be relative, not absolute
+  - Both `bun run build` and `bun run typecheck` pass cleanly
+  - Branch: ralph/openreview-app created from main
+---
