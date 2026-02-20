@@ -1,6 +1,6 @@
-app/node_modules/
-app/dist/
-app/out/
+node_modules/
+dist/
+out/
 web/node_modules/
 web/.next/
 web/dist/

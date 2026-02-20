@@ -6,7 +6,7 @@ OpenReview is a desktop code review tool built with Electron, React, and Bun. It
 
 The tool is language/framework agnostic — it works on any git repository regardless of tech stack.
 
-The Electron app lives under `app/` in the monorepo. The repo root is reserved for future `web/` (landing page) and `docs/` (documentation site).
+The Electron app lives at the repo root. Future `web/` (landing page) and `docs/` (documentation site) will be added as subdirectories alongside.
 
 ---
 
@@ -198,39 +198,38 @@ The tool must handle large real-world repos without degradation. The following c
 
 ### Repo Structure
 
-The repo root is a monorepo. The Electron app lives under `app/`. Future packages (`web/`, `docs/`) will sit alongside it.
+The Electron app lives at the repo root. `web/` and `docs/` will be added as subdirectories when needed — each with their own `package.json`.
 
 ```
-openreview/              # repo root
-├── app/                 # Electron desktop app (OpenReview)
-│   ├── src/
-│   │   ├── main/           # Electron main process
-│   │   │   ├── index.ts    # App entry, window creation
-│   │   │   └── git.ts      # Git command wrappers (diff, add, restore)
-│   │   ├── renderer/       # React app
-│   │   │   ├── App.tsx
-│   │   │   ├── components/
-│   │   │   │   ├── Sidebar.tsx       # File tree
-│   │   │   │   ├── DiffView.tsx      # Main diff panel
-│   │   │   │   ├── DiffLine.tsx      # Single line with gutter + comment
-│   │   │   │   ├── CommentBox.tsx    # Inline comment editor
-│   │   │   │   └── Toolbar.tsx       # Top bar with Copy Review button
-│   │   │   ├── store/
-│   │   │   │   ├── repo.ts           # Repo/file state (Zustand)
-│   │   │   │   └── comments.ts       # Comment state (Zustand)
-│   │   │   ├── hooks/
-│   │   │   │   └── useHighlighter.ts # Web Worker bridge for shiki
-│   │   │   └── workers/
-│   │   │       └── highlighter.worker.ts
-│   │   └── shared/
-│   │       └── types.ts    # Shared types between main and renderer
-│   ├── package.json
-│   └── bunfig.toml
-├── web/                 # Landing page (future)
-├── docs/                # Documentation site (future)
-├── prd.json             # Ralph config
-├── CLAUDE.md            # Ralph per-iteration prompt
-├── ralph.sh             # Ralph runner
+openreview/
+├── src/
+│   ├── main/               # Electron main process
+│   │   ├── index.ts        # App entry, window creation
+│   │   └── git.ts          # Git command wrappers (diff, add, restore)
+│   ├── renderer/           # React app
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   │   ├── Sidebar.tsx       # File tree
+│   │   │   ├── DiffView.tsx      # Main diff panel
+│   │   │   ├── DiffLine.tsx      # Single line with gutter + comment
+│   │   │   ├── CommentBox.tsx    # Inline comment editor
+│   │   │   └── Toolbar.tsx       # Top bar with Copy Review button
+│   │   ├── store/
+│   │   │   ├── repo.ts           # Repo/file state (Zustand)
+│   │   │   └── comments.ts       # Comment state (Zustand)
+│   │   ├── hooks/
+│   │   │   └── useHighlighter.ts # Web Worker bridge for shiki
+│   │   └── workers/
+│   │       └── highlighter.worker.ts
+│   └── shared/
+│       └── types.ts        # Shared types between main and renderer
+├── web/                    # Landing page (future)
+├── docs/                   # Documentation site (future)
+├── package.json
+├── bunfig.toml
+├── prd.json
+├── CLAUDE.md
+├── ralph.sh
 └── .gitignore
 ```
 
