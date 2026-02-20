@@ -4,6 +4,8 @@ Started: Fri Feb 20 19:12:04 CET 2026
 
 ## Codebase Patterns
 - preload/index.ts exposes IPC calls via contextBridge; renderer accesses them as `window.electron.*`
+- Declare `window.electron` types in src/renderer/electron.d.ts (included by tsconfig.web.json via `src/renderer/**/*`)
+- React components live in src/renderer/components/; use Zustand selector pattern for store access
 - parse-diff Change types: 'add' uses `ln` (newLine), 'del' uses `ln` (oldLine), 'normal' uses `ln1`/`ln2`
 - ipcMain handlers are registered before createWindow() to ensure they're ready when renderer loads
 - Use `electron-vite` for building: main/preload use SSR bundle mode, renderer uses standard Vite build
@@ -13,6 +15,18 @@ Started: Fri Feb 20 19:12:04 CET 2026
 - Build output goes to `out/` (electron-vite default), not `dist/`
 - Zustand stores live in src/renderer/store/; use selector pattern `useStore(state => state.field)` for stable refs
 - useCommentsStore keys comments as `${filePath}:${lineNumber}`; getCommentsForFile/getComment use get() for current state
+
+## 2026-02-20 - US-005
+- Created src/renderer/electron.d.ts: global Window interface augmentation with `window.electron` types
+- Created src/renderer/components/Toolbar.tsx: toolbar with Open Folder, Refresh, Copy Review buttons (latter two disabled until repo loaded)
+- Updated src/renderer/App.tsx: integrates Toolbar, handles openFolder/refresh/copyReview callbacks, shows LoadingSkeleton during fetch, 'Not a git repository' error on IPC failure, empty/loaded states
+- Files changed: src/renderer/electron.d.ts, src/renderer/components/Toolbar.tsx, src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - `window.electron` types must be declared in a .d.ts file under src/renderer/ so tsconfig.web.json picks them up
+  - Any error from `window.electron.getRepoDiff()` is treated as "Not a git repository" — git commands fail with exit 128 for non-git dirs
+  - Zustand setters (setLoading, setFiles, etc.) are stable refs — safe to list in useCallback deps
+  - Browser verification skipped (no browser MCP tool configured)
+---
 
 ## 2026-02-20 - US-004
 - Created src/renderer/store/repo.ts: useRepoStore with rootPath, files, selectedFile, isLoading + setters
