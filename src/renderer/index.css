@@ -4,30 +4,30 @@
 
 :root {
   /* Surface levels */
-  --color-base: #07090f;
-  --color-surface: #0d1117;
-  --color-elevated: #121926;
-  --color-overlay: #192333;
-  --color-border: #1e2d40;
-  --color-border-subtle: #131e2b;
+  --color-base: #13141a;
+  --color-surface: #1a1b22;
+  --color-elevated: #1f2029;
+  --color-overlay: #252631;
+  --color-border: #2c2d3a;
+  --color-border-subtle: #1e1f2a;
 
   /* Text */
-  --color-text-primary: #dce6f5;
-  --color-text-secondary: #6b7c95;
-  --color-text-muted: #374a5e;
+  --color-text-primary: #c8cdd8;
+  --color-text-secondary: #636879;
+  --color-text-muted: #3d4050;
 
   /* Accent — indigo */
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-accent-subtle: rgba(99, 102, 241, 0.12);
+  --color-accent: #7c7ff7;
+  --color-accent-hover: #9fa2ff;
+  --color-accent-subtle: rgba(124, 127, 247, 0.12);
 
   /* Diff */
-  --color-added-bg: #071712;
-  --color-added-text: #4ade80;
-  --color-removed-bg: #160808;
-  --color-removed-text: #f87171;
-  --color-hunk-bg: #0c1620;
-  --color-hunk-text: #4b6280;
+  --color-added-bg: #162318;
+  --color-added-text: #57c98f;
+  --color-removed-bg: #2a1215;
+  --color-removed-text: #e06c75;
+  --color-hunk-bg: #161a28;
+  --color-hunk-text: #4a5878;
 }
 
 html,

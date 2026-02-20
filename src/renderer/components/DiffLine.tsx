@@ -40,8 +40,8 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
   if (line.type === 'hunk-header') {
     return (
       <div
-        className="flex items-center bg-diff-hunk px-4 font-mono text-xs text-diff-hunk-fg"
-        style={{ minHeight: 26, borderTop: '1px solid var(--color-border-subtle)', borderBottom: '1px solid var(--color-border-subtle)' }}
+        className="flex items-center bg-diff-hunk px-4 font-mono text-[11px] text-diff-hunk-fg"
+        style={{ minHeight: 20, borderTop: '1px solid var(--color-border-subtle)', borderBottom: '1px solid var(--color-border-subtle)' }}
       >
         {line.content}
       </div>
@@ -63,17 +63,17 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
   const codeContent = line.content.slice(1)
 
   return (
-    <div className={`font-mono text-xs ${bgClass}`}>
+    <div className={`font-mono text-[11px] ${bgClass}`}>
       {/* Main line row */}
-      <div className="group flex items-center" style={{ minHeight: 26 }}>
+      <div className="group flex items-center" style={{ minHeight: 20 }}>
         {/* Old line number */}
         <div
-          className="w-11 shrink-0 select-none pr-2 text-right font-mono text-[11px] text-ink-ghost"
+          className="w-9 shrink-0 select-none pr-1.5 text-right font-mono text-[10px] text-ink-ghost"
           style={{
             borderRight: isAdded
-              ? '1px solid rgba(74,222,128,0.12)'
+              ? '1px solid rgba(87,201,143,0.12)'
               : isRemoved
-                ? '1px solid rgba(248,113,113,0.12)'
+                ? '1px solid rgba(224,108,117,0.12)'
                 : '1px solid var(--color-border-subtle)',
           }}
         >
@@ -81,7 +81,7 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
         </div>
         {/* New line number */}
         <div
-          className="w-11 shrink-0 select-none pr-2 text-right font-mono text-[11px] text-ink-ghost"
+          className="w-9 shrink-0 select-none pr-1.5 text-right font-mono text-[10px] text-ink-ghost"
           style={{
             borderRight: '1px solid var(--color-border-subtle)',
           }}

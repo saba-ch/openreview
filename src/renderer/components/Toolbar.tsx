@@ -73,69 +73,49 @@ export default function Toolbar({
   const isRepoLoaded = rootPath !== null
 
   return (
-    <div className="flex h-12 shrink-0 items-center gap-1.5 border-b border-line bg-surface px-4">
+    <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-line bg-elevated px-3">
       {/* Brand */}
-      <div className="mr-2.5 flex items-center gap-2">
-        <div
-          className="h-4 w-4 shrink-0 rotate-45 rounded-sm bg-accent"
-          style={{ boxShadow: '0 0 10px rgba(99,102,241,0.4)' }}
-        />
-        <span
-          className="text-sm font-semibold text-ink"
-          style={{ letterSpacing: '-0.025em' }}
-        >
-          OpenReview
+      <div className="mr-2 flex items-center gap-1.5">
+        <div className="h-3 w-3 shrink-0 rotate-45 rounded-[2px] bg-accent" />
+        <span className="font-mono text-[11px] font-semibold text-ink-dim" style={{ letterSpacing: '0.01em' }}>
+          openreview
         </span>
       </div>
 
-      <div className="mx-2 h-4 w-px bg-line-subtle" />
+      <div className="mx-1.5 h-3 w-px bg-line" />
 
       {/* Primary action */}
       <button
         onClick={onOpenFolder}
-        className="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-accent-hi active:scale-95"
-        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }}
+        className="flex items-center gap-1.5 rounded bg-accent px-2.5 py-1 font-mono text-[11px] font-semibold text-white transition-all hover:bg-accent-hi active:scale-95"
       >
         <FolderIcon />
-        Open
+        open
       </button>
 
       <button
         onClick={onRefresh}
         disabled={!isRepoLoaded}
         title="Refresh (⌘R)"
-        className="flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-dim transition-all hover:bg-elevated hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
+        className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 font-mono text-[11px] text-ink-dim transition-all hover:bg-overlay hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
       >
         <RefreshIcon />
-        Refresh
+        refresh
       </button>
 
       <button
         onClick={onCopyReview}
         disabled={!hasComments}
-        className="flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-dim transition-all hover:bg-elevated hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
+        className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 font-mono text-[11px] text-ink-dim transition-all hover:bg-overlay hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
       >
         <CopyIcon />
-        Copy Review
+        copy review
       </button>
 
-      {/* Repo path pill */}
+      {/* Repo path */}
       {rootPath && (
-        <div className="ml-auto flex items-center gap-1.5 rounded border border-line-subtle bg-elevated px-2.5 py-1">
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 12 12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="shrink-0 text-ink-ghost"
-          >
-            <path d="M1 3h3.5l1.5 1.5H11a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5H1a.5.5 0 0 1-.5-.5V3.5A.5.5 0 0 1 1 3Z" />
-          </svg>
-          <span className="max-w-xs truncate font-mono text-[10px] text-ink-ghost">
+        <div className="ml-auto flex items-center gap-1 overflow-hidden">
+          <span className="truncate font-mono text-[10px] text-ink-ghost" style={{ maxWidth: 320 }}>
             {rootPath}
           </span>
         </div>

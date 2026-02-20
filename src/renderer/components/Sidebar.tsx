@@ -59,7 +59,7 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: useCallback(
-      (i: number) => (itemsRef.current[i]?.kind === 'header' ? 30 : 38),
+      (i: number) => (itemsRef.current[i]?.kind === 'header' ? 26 : 30),
       []
     ),
   })
@@ -95,35 +95,32 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
   }, [rootPath, stagedFiles, onRefreshDiff])
 
   return (
-    <div className="flex w-64 shrink-0 flex-col border-r border-line bg-elevated">
+    <div className="flex w-60 shrink-0 flex-col border-r border-line bg-elevated">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line px-3 py-2">
-        <span
-          className="text-[10px] font-semibold uppercase tracking-widest text-ink-ghost"
-          style={{ letterSpacing: '0.08em' }}
-        >
-          Files
+      <div className="flex items-center justify-between border-b border-line px-3" style={{ minHeight: 32 }}>
+        <span className="font-mono text-[10px] font-semibold uppercase text-ink-ghost" style={{ letterSpacing: '0.06em' }}>
+          FILES
         </span>
         <div className="flex gap-0.5">
           <button
             onClick={handleStageAll}
-            className="rounded px-2 py-0.5 text-[10px] font-medium text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
+            className="rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
             title="Stage All"
           >
-            Stage All
+            +all
           </button>
           <button
             onClick={handleUnstageAll}
-            className="rounded px-2 py-0.5 text-[10px] font-medium text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
+            className="rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
             title="Unstage All"
           >
-            Unstage All
+            -all
           </button>
         </div>
       </div>
 
       {/* Filter input */}
-      <div className="border-b border-line px-3 py-2">
+      <div className="border-b border-line px-2 py-1.5">
         <div className="relative">
           <svg
             className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-ink-ghost"
@@ -173,14 +170,11 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
                 }}
               >
                 {item.kind === 'header' ? (
-                  <div className="flex h-full items-center px-3">
-                    <span
-                      className="text-[10px] font-semibold uppercase text-ink-ghost"
-                      style={{ letterSpacing: '0.07em' }}
-                    >
+                  <div className="flex h-full items-center border-b border-line-subtle bg-base px-3">
+                    <span className="font-mono text-[9px] font-semibold uppercase text-ink-ghost" style={{ letterSpacing: '0.06em' }}>
                       {item.label}
                     </span>
-                    <span className="ml-auto rounded border border-line-subtle bg-surface px-1.5 font-mono text-[9px] tabular-nums text-ink-dim">
+                    <span className="ml-auto font-mono text-[9px] tabular-nums text-ink-ghost">
                       {item.count}
                     </span>
                   </div>
@@ -218,7 +212,7 @@ function FileRow({ file, isSelected, onSelect, onToggleStage }: FileRowProps): R
   return (
     <div
       onClick={onSelect}
-      className={`flex h-full cursor-pointer items-center gap-2 border-l-2 px-3 text-xs transition-colors ${
+      className={`flex h-full cursor-pointer items-center gap-1.5 border-l-2 px-2 transition-colors ${
         isSelected
           ? 'border-accent bg-overlay text-ink'
           : 'border-transparent hover:bg-overlay text-ink-dim'
@@ -232,19 +226,19 @@ function FileRow({ file, isSelected, onSelect, onToggleStage }: FileRowProps): R
         className="h-3 w-3 shrink-0 cursor-pointer accent-accent"
       />
       <div className="min-w-0 flex-1">
-        <div className={`truncate font-medium ${isSelected ? 'text-ink' : 'text-ink-dim'}`}>
+        <div className={`truncate font-mono text-[11px] ${isSelected ? 'text-ink' : 'text-ink-dim'}`}>
           {name}
         </div>
         {dir && (
-          <div className="truncate font-mono text-[10px] text-ink-ghost">{dir}</div>
+          <div className="truncate font-mono text-[9px] text-ink-ghost">{dir}</div>
         )}
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5 font-mono">
+      <div className="flex shrink-0 items-center gap-1 font-mono text-[9px]">
         {file.additions > 0 && (
-          <span className="text-[10px] text-diff-add-fg">+{file.additions}</span>
+          <span className="text-diff-add-fg">+{file.additions}</span>
         )}
         {file.deletions > 0 && (
-          <span className="text-[10px] text-diff-remove-fg">-{file.deletions}</span>
+          <span className="text-diff-remove-fg">-{file.deletions}</span>
         )}
       </div>
     </div>

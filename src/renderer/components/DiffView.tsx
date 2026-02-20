@@ -6,7 +6,7 @@ import { DiffLine as DiffLineType } from '../../shared/types'
 import DiffLineComponent from './DiffLine'
 import { useHighlighter } from '../hooks/useHighlighter'
 
-const ROW_HEIGHT = 22
+const ROW_HEIGHT = 20
 
 export default function DiffView(): React.ReactElement {
   const selectedFile = useRepoStore((state) => state.selectedFile)
@@ -93,7 +93,7 @@ export default function DiffView(): React.ReactElement {
   if (!selectedFile || selectedFile.hunks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-ink-ghost text-sm">No changes</p>
+        <p className="font-mono text-[11px] text-ink-ghost">no changes</p>
       </div>
     )
   }

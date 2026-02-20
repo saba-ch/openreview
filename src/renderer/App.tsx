@@ -127,7 +127,7 @@ export default function App(): React.ReactElement {
       {/* Toast */}
       {toastVisible && (
         <div
-          className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg border border-line bg-elevated px-4 py-2.5 text-xs font-medium text-ink shadow-xl"
+          className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 rounded border border-line bg-elevated px-3.5 py-2 font-mono text-[11px] text-ink shadow-xl"
           style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--color-border)' }}
         >
           <span className="mr-2 text-accent">✓</span>
@@ -161,10 +161,10 @@ export default function App(): React.ReactElement {
         ) : !rootPath ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3">
             <div
-              className="h-8 w-8 rotate-45 rounded-md bg-accent opacity-20"
-              style={{ boxShadow: '0 0 24px rgba(99,102,241,0.3)' }}
+              className="h-7 w-7 rotate-45 rounded bg-accent opacity-15"
+              style={{ boxShadow: '0 0 20px rgba(124,127,247,0.25)' }}
             />
-            <p className="text-sm text-ink-ghost">Open a folder to start reviewing</p>
+            <p className="font-mono text-[11px] text-ink-ghost">open a folder to start reviewing</p>
           </div>
         ) : (
           <>
