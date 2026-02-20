@@ -3,11 +3,26 @@ Started: Fri Feb 20 19:12:04 CET 2026
 ---
 
 ## Codebase Patterns
+- preload/index.ts exposes IPC calls via contextBridge; renderer accesses them as `window.electron.*`
+- parse-diff Change types: 'add' uses `ln` (newLine), 'del' uses `ln` (oldLine), 'normal' uses `ln1`/`ln2`
+- ipcMain handlers are registered before createWindow() to ensure they're ready when renderer loads
 - Use `electron-vite` for building: main/preload use SSR bundle mode, renderer uses standard Vite build
 - electron-vite renderer root is `src/renderer/` — `index.html` script src must be relative (`./main.tsx`), not absolute (`/src/renderer/main.tsx`)
 - `"type": "module"` in package.json is needed to avoid Node ESM warnings with `postcss.config.js`
 - Typecheck command: `tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json`
 - Build output goes to `out/` (electron-vite default), not `dist/`
+
+## 2026-02-20 - US-003
+- Implemented git operations in Electron main process
+- Created src/main/git.ts: runGit helper, mapParsedFiles (parse-diff → DiffFile[]), getRepoDiff, stageFile, unstageFile
+- Updated src/main/index.ts: added ipcMain handlers for GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG
+- Updated src/preload/index.ts: exposed openDialog, getRepoDiff, stageFile, unstageFile via contextBridge
+- **Learnings for future iterations:**
+  - parse-diff 'add' changes use `ln` for new line number; 'del' uses `ln` for old line number; 'normal' uses `ln1`/`ln2`
+  - Hunk header is included as a DiffLine of type 'hunk-header' at the start of each hunk's lines array
+  - The preload exposes `window.electron` API — renderer components should call these for all IPC
+  - OPEN_DIALOG handler uses dialog.showOpenDialog with 'openDirectory' property, returns null if canceled
+---
 
 ## 2026-02-20 - US-002
 - Populated src/shared/types.ts with all required exported types and IPC constants
