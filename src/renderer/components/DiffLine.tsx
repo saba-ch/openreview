@@ -3,10 +3,12 @@ import { DiffLine as DiffLineType } from '../../shared/types'
 
 interface DiffLineProps {
   line: DiffLineType
+  highlightHtml?: string
 }
 
 const DiffLineComponent = React.memo(function DiffLineComponent({
   line,
+  highlightHtml,
 }: DiffLineProps): React.ReactElement {
   if (line.type === 'hunk-header') {
     return (
@@ -30,6 +32,10 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
         ? 'text-red-200'
         : 'text-gray-300'
 
+  // Separate the diff marker (+/-/space) from the code content
+  const marker = line.content[0] ?? ' '
+  const codeContent = line.content.slice(1)
+
   return (
     <div className={`flex h-full items-center font-mono text-xs ${bgClass}`}>
       {/* Old line number */}
@@ -40,10 +46,19 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
       <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
         {line.newLineNumber ?? ''}
       </div>
-      {/* Content */}
-      <div className={`flex-1 overflow-hidden pl-1 whitespace-pre ${textClass}`}>
-        {line.content}
-      </div>
+      {/* Diff marker */}
+      <div className={`w-4 shrink-0 select-none ${textClass}`}>{marker}</div>
+      {/* Content: highlighted HTML or plain text fallback */}
+      {highlightHtml ? (
+        <div
+          className="flex-1 overflow-hidden whitespace-pre"
+          dangerouslySetInnerHTML={{ __html: highlightHtml }}
+        />
+      ) : (
+        <div className={`flex-1 overflow-hidden whitespace-pre ${textClass}`}>
+          {codeContent}
+        </div>
+      )}
     </div>
   )
 })

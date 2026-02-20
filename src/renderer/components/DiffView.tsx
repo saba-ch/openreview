@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRepoStore } from '../store/repo'
 import { DiffLine as DiffLineType } from '../../shared/types'
 import DiffLineComponent from './DiffLine'
+import { useHighlighter } from '../hooks/useHighlighter'
 
 const ROW_HEIGHT = 22
 
@@ -22,6 +23,14 @@ export default function DiffView(): React.ReactElement {
     estimateSize: () => ROW_HEIGHT,
   })
 
+  // Compute visible range for the highlighter hook
+  const virtualItems = virtualizer.getVirtualItems()
+  const visibleStart = virtualItems.length > 0 ? virtualItems[0].index : 0
+  const visibleEnd =
+    virtualItems.length > 0 ? virtualItems[virtualItems.length - 1].index : 0
+
+  const highlights = useHighlighter(lines, selectedFile, visibleStart, visibleEnd)
+
   if (!selectedFile || selectedFile.hunks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -39,7 +48,7 @@ export default function DiffView(): React.ReactElement {
           position: 'relative',
         }}
       >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
+        {virtualItems.map((virtualItem) => {
           const line = lines[virtualItem.index]
           return (
             <div
@@ -53,7 +62,10 @@ export default function DiffView(): React.ReactElement {
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <DiffLineComponent line={line} />
+              <DiffLineComponent
+                line={line}
+                highlightHtml={highlights.get(virtualItem.index)}
+              />
             </div>
           )
         })}
