@@ -1,0 +1,229 @@
+{
+  "project": "codereview",
+  "branchName": "ralph/code-review-tool",
+  "description": "Desktop code review tool (Electron + React + Bun) — open any git repo, view diffs, write line comments, copy structured review to clipboard.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold Electron + React + Bun + Tailwind project",
+      "description": "As a developer, I need a working project skeleton so that all subsequent stories have a foundation to build on.",
+      "acceptanceCriteria": [
+        "package.json exists with dependencies: electron, react, react-dom, tailwindcss, @tanstack/react-virtual, zustand, parse-diff",
+        "bunfig.toml exists",
+        "src/main/index.ts exists — creates a BrowserWindow and loads the renderer",
+        "src/renderer/index.html and src/renderer/main.tsx exist — renders <App /> with a placeholder 'Code Review Tool' heading",
+        "src/shared/types.ts exists (empty, placeholder comment)",
+        "Tailwind CSS is configured and the heading has at least one Tailwind class applied",
+        "Running `bun run dev` starts the Electron app without errors",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define shared TypeScript types",
+      "description": "As a developer, I need shared types for diff data and IPC so that main process and renderer speak the same language.",
+      "acceptanceCriteria": [
+        "src/shared/types.ts exports: DiffLine, DiffHunk, DiffFile, Comment, RepoState",
+        "DiffLine has: lineNumber (number), oldLineNumber (number | null), newLineNumber (number | null), type ('added' | 'removed' | 'context' | 'hunk-header'), content (string)",
+        "DiffHunk has: header (string), lines (DiffLine[])",
+        "DiffFile has: filePath (string), oldFilePath (string), hunks (DiffHunk[]), additions (number), deletions (number), staged (boolean)",
+        "Comment has: id (string), filePath (string), lineNumber (number), text (string), outdated (boolean)",
+        "RepoState has: rootPath (string), files (DiffFile[])",
+        "IPC channel names exported as const: GIT_DIFF = 'git:diff', GIT_STAGE = 'git:stage', GIT_UNSTAGE = 'git:unstage', OPEN_DIALOG = 'dialog:open'",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement git operations in Electron main process",
+      "description": "As a developer, I need the main process to run git commands and return structured data so that the renderer never shells out directly.",
+      "acceptanceCriteria": [
+        "src/main/git.ts exports: getRepoDiff(rootPath: string): Promise<DiffFile[]>",
+        "getRepoDiff runs both `git diff` (unstaged) and `git diff --cached` (staged) via child_process.spawn",
+        "Output of both commands is parsed using the `parse-diff` npm package into DiffFile[]",
+        "Files from `git diff --cached` have staged: true; files from `git diff` have staged: false",
+        "src/main/git.ts exports: stageFile(rootPath, filePath) — runs `git add <filePath>`",
+        "src/main/git.ts exports: unstageFile(rootPath, filePath) — runs `git restore --staged <filePath>`",
+        "src/main/index.ts registers ipcMain handlers for GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG",
+        "OPEN_DIALOG handler opens a native folder picker and returns the selected path",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Set up Zustand stores",
+      "description": "As a developer, I need state stores for repo data and comments so that all renderer components share state efficiently.",
+      "acceptanceCriteria": [
+        "src/renderer/store/repo.ts exports useRepoStore with: rootPath (string | null), files (DiffFile[]), selectedFile (DiffFile | null), isLoading (boolean)",
+        "useRepoStore exposes: setRootPath, setFiles, setSelectedFile, setLoading actions",
+        "src/renderer/store/comments.ts exports useCommentsStore with: comments (Comment[]) keyed internally by `${filePath}:${lineNumber}`",
+        "useCommentsStore exposes: addComment, updateComment, deleteComment, markOutdated(filePath, lineNumber) actions",
+        "useCommentsStore exposes selector: getCommentsForFile(filePath): Comment[]",
+        "useCommentsStore exposes selector: getComment(filePath, lineNumber): Comment | undefined",
+        "Selectors are stable references (use Zustand's selector pattern, not object spread) to prevent unnecessary re-renders",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "App shell with toolbar and open-folder flow",
+      "description": "As a user, I want to open a folder and see a loading state so that the app feels responsive from the first click.",
+      "acceptanceCriteria": [
+        "src/renderer/components/Toolbar.tsx renders a top bar with: 'Open Folder' button, 'Refresh' button (disabled until repo loaded), 'Copy Review' button (disabled until repo loaded)",
+        "Clicking 'Open Folder' invokes the OPEN_DIALOG IPC call, receives a path, then invokes GIT_DIFF IPC call",
+        "While GIT_DIFF is in flight, isLoading is true and the main area shows a skeleton placeholder (e.g. gray animated bars)",
+        "If the selected folder has no .git directory, an error message is shown: 'Not a git repository'",
+        "After load, files are stored in useRepoStore and the first file is auto-selected",
+        "Clicking 'Refresh' re-runs GIT_DIFF with the current rootPath",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Virtualized file tree sidebar",
+      "description": "As a user, I want to see all changed files in a sidebar so I can navigate between them, even in large repos.",
+      "acceptanceCriteria": [
+        "src/renderer/components/Sidebar.tsx renders a left sidebar",
+        "Sidebar has two sections: 'Staged' and 'Unstaged', each showing their respective files",
+        "Each file row shows: filename, relative path, +N additions in green, -M deletions in red",
+        "Clicking a file row calls setSelectedFile — the selected file is highlighted",
+        "A text input at the top filters the visible file list by filename (case-insensitive)",
+        "Each file row has a checkbox: checked=staged, unchecked=unstaged. Toggling calls GIT_STAGE or GIT_UNSTAGE then re-runs GIT_DIFF",
+        "'Stage All' and 'Unstage All' buttons in the sidebar header",
+        "The file list uses @tanstack/react-virtual for virtualization (renderered rows capped to viewport)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Virtualized diff view with line rendering",
+      "description": "As a user, I want to see a scrollable, color-coded diff for the selected file so I can read changes efficiently, even in large files.",
+      "acceptanceCriteria": [
+        "src/renderer/components/DiffView.tsx renders the diff for the selected file from useRepoStore",
+        "src/renderer/components/DiffLine.tsx renders a single line and is wrapped in React.memo",
+        "Added lines have a green background, removed lines have a red background, context lines are neutral",
+        "Each line shows old line number and new line number in the gutter (right-aligned, monospace, muted color)",
+        "Hunk headers (type === 'hunk-header') render as a full-width gray separator row showing the @@ ... @@ text",
+        "The full line list is rendered with @tanstack/react-virtual with a fixed row height of 22px",
+        "If a file has 0 hunks, a placeholder message 'No changes' is shown",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Syntax highlighting via Web Worker",
+      "description": "As a user, I want diff lines to be syntax-highlighted by language so the code is easier to read, without blocking the UI.",
+      "acceptanceCriteria": [
+        "src/renderer/workers/highlighter.worker.ts is a Web Worker that imports shiki",
+        "The worker accepts messages of shape { id, code, lang } and responds with { id, tokens } (HTML string per line)",
+        "src/renderer/hooks/useHighlighter.ts manages the worker, sends line content, and returns a Map<lineIndex, string> of highlighted HTML",
+        "Only lines currently visible in the virtual window ± 20 lines are sent to the worker for highlighting",
+        "Highlighted output is cached in a Map keyed by `${filePath}:${lineIndex}` — re-selecting a file uses the cache",
+        "DiffLine renders highlighted HTML via dangerouslySetInnerHTML when available, falls back to plain text otherwise",
+        "Language is detected from the file extension (e.g. .ts → typescript, .py → python, .go → go)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add line comments via inline comment box",
+      "description": "As a user, I want to click a line and write a comment so I can annotate specific changes during review.",
+      "acceptanceCriteria": [
+        "Hovering a DiffLine row reveals a '+' button in the left gutter",
+        "Clicking '+' opens an inline CommentBox component rendered below that line inside the virtual list row (row height expands to fit)",
+        "src/renderer/components/CommentBox.tsx renders: a textarea (autofocused), a 'Comment' submit button, and a 'Cancel' button",
+        "Clicking 'Comment' with non-empty text calls addComment in useCommentsStore and closes the box",
+        "Clicking 'Cancel' closes the box without saving",
+        "Lines with a saved comment show a speech-bubble icon in the gutter instead of (or alongside) the '+' button",
+        "The virtual list correctly accounts for the expanded row height when a CommentBox is open (measureElement or estimateSize callback)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "View, edit, and delete existing comments",
+      "description": "As a user, I want to read, modify, and remove my comments so I can refine the review before copying it.",
+      "acceptanceCriteria": [
+        "Lines with a saved comment render the comment text inline below the line (always visible, not just on hover)",
+        "Each inline comment shows: the comment text, an 'Edit' button, and a 'Delete' button",
+        "Clicking 'Edit' replaces the display with a CommentBox pre-filled with the existing text",
+        "Saving the edit calls updateComment in useCommentsStore",
+        "Clicking 'Delete' calls deleteComment and removes the inline display and gutter icon",
+        "Outdated comments (Comment.outdated === true) are shown with a yellow/amber border and an 'Outdated' label",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Copy review as plain text",
+      "description": "As a user, I want to copy all comments as a formatted plain-text block so I can paste it into Claude to request fixes.",
+      "acceptanceCriteria": [
+        "'Copy Review' button in Toolbar is disabled (opacity-50, cursor-not-allowed) when useCommentsStore has 0 comments",
+        "Clicking 'Copy Review' formats all comments as: `<filePath>:<lineNumber> — \"<commentText>\"`, one per line",
+        "Comments are sorted: first by filePath alphabetically, then by lineNumber ascending",
+        "The formatted string is written to the clipboard using Electron's clipboard.writeText",
+        "A toast notification appears for 2 seconds: 'Review copied to clipboard'",
+        "Outdated comments are included in the output with an [OUTDATED] prefix before the comment text",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Refresh diff and mark outdated comments",
+      "description": "As a user, I want to refresh the diff so the tool reflects my latest working tree changes, and see which comments are now stale.",
+      "acceptanceCriteria": [
+        "Clicking 'Refresh' in the Toolbar or pressing Cmd+R re-runs GIT_DIFF with the current rootPath",
+        "After refresh, the file list and diff views update to reflect the new state",
+        "For each existing comment, check if its { filePath, lineNumber } still exists in the new diff",
+        "If the line no longer exists in the diff, markOutdated is called on that comment",
+        "If the file no longer appears in the diff at all, all its comments are marked outdated",
+        "The selected file remains selected after refresh (if it still has changes); otherwise the first file is selected",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
