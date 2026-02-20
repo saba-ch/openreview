@@ -1,4 +1,22 @@
 # Ralph Progress Log
+## 2026-02-20 - US-012
+- Updated src/renderer/App.tsx:
+  - Refactored `loadRepo` to return `DiffFile[] | null` instead of setting selectedFile internally
+  - Updated `handleOpenFolder` to call `setSelectedFile` after `loadRepo` returns
+  - Rewrote `handleRefresh`: saves `prevSelectedPath`, calls `loadRepo`, builds `validLines` Set (filePath:lineNumber) and `newFilePathSet` from new diff, iterates all comments and calls `markOutdated` for any whose file or line no longer exists, then preserves previously selected file (or falls back to first)
+  - Added `useEffect` for Cmd+R / Ctrl+R keyboard shortcut that calls `handleRefresh`
+  - Added `selectedFile` and `markOutdated` subscriptions from stores
+  - Added `import type { DiffFile }` from shared types
+- Files changed: src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - Use `useCommentsStore.getState().comments` inside callbacks to read current comments without stale closure issues
+  - Refactor shared fetch helpers to return data rather than setting state internally — callers can then act on the result (mark outdated, set selected file, etc.)
+  - Cmd+R keyboard shortcut: listen on `window` in a `useEffect` with the callback in the dep array; use `e.preventDefault()` to suppress browser/electron default reload
+  - `markOutdated` action is a stable Zustand ref — safe to subscribe with `useCommentsStore(state => state.markOutdated)` and include in `useCallback` deps
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+
 ## 2026-02-20 - US-011
 - Added `CLIPBOARD_WRITE = 'clipboard:write'` IPC constant to src/shared/types.ts
 - Updated src/main/index.ts: imported `clipboard` from electron, registered ipcMain handler for CLIPBOARD_WRITE using `clipboard.writeText(text)`
