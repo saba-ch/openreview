@@ -2,6 +2,18 @@
 Started: Fri Feb 20 19:12:04 CET 2026
 ---
 
+## 2026-02-20 - US-007
+- Created src/renderer/components/DiffLine.tsx: memoized single-line renderer with color-coded backgrounds (green/red/neutral), gutter with oldLineNumber + newLineNumber, hunk-header styled as full-width gray separator
+- Created src/renderer/components/DiffView.tsx: virtualized diff view using @tanstack/react-virtual (ROW_HEIGHT=22px), flattens all hunks' lines via flatMap, shows "No changes" placeholder when file has 0 hunks
+- Updated src/renderer/App.tsx: replaced placeholder div with <DiffView /> in the loaded state
+- Files changed: src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx, src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - DiffLine content from parse-diff includes the leading +/-/space prefix character — display as-is with `whitespace-pre`
+  - hunk-header DiffLines have null oldLineNumber/newLineNumber; content is the @@ ... @@ string from chunk.content
+  - DiffView flattens selectedFile.hunks.flatMap(h => h.lines) — no need to track hunk boundaries separately
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
 ## 2026-02-20 - US-006
 - Created src/renderer/components/Sidebar.tsx: virtualized sidebar with Staged/Unstaged sections, filter input, Stage All/Unstage All buttons
 - FileRow component: checkbox for stage toggle, filename + dir, green additions / red deletions
