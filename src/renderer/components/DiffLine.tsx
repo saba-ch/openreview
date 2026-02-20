@@ -1,18 +1,36 @@
 import React from 'react'
 import { DiffLine as DiffLineType } from '../../shared/types'
+import CommentBox from './CommentBox'
 
 interface DiffLineProps {
   line: DiffLineType
+  lineIndex: number
+  filePath: string
   highlightHtml?: string
+  hasComment: boolean
+  isCommentOpen: boolean
+  onOpenComment: (lineIndex: number) => void
+  onCloseComment: () => void
+  onAddComment: (filePath: string, lineNumber: number, text: string) => void
 }
 
 const DiffLineComponent = React.memo(function DiffLineComponent({
   line,
+  lineIndex,
+  filePath,
   highlightHtml,
+  hasComment,
+  isCommentOpen,
+  onOpenComment,
+  onCloseComment,
+  onAddComment,
 }: DiffLineProps): React.ReactElement {
   if (line.type === 'hunk-header') {
     return (
-      <div className="flex h-full items-center bg-gray-800 px-4 font-mono text-xs text-gray-400">
+      <div
+        className="flex items-center bg-gray-800 px-4 font-mono text-xs text-gray-400"
+        style={{ minHeight: 22 }}
+      >
         {line.content}
       </div>
     )
@@ -37,27 +55,53 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
   const codeContent = line.content.slice(1)
 
   return (
-    <div className={`flex h-full items-center font-mono text-xs ${bgClass}`}>
-      {/* Old line number */}
-      <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
-        {line.oldLineNumber ?? ''}
-      </div>
-      {/* New line number */}
-      <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
-        {line.newLineNumber ?? ''}
-      </div>
-      {/* Diff marker */}
-      <div className={`w-4 shrink-0 select-none ${textClass}`}>{marker}</div>
-      {/* Content: highlighted HTML or plain text fallback */}
-      {highlightHtml ? (
-        <div
-          className="flex-1 overflow-hidden whitespace-pre"
-          dangerouslySetInnerHTML={{ __html: highlightHtml }}
-        />
-      ) : (
-        <div className={`flex-1 overflow-hidden whitespace-pre ${textClass}`}>
-          {codeContent}
+    <div className={`font-mono text-xs ${bgClass}`}>
+      {/* Main line row */}
+      <div className="group flex items-center" style={{ minHeight: 22 }}>
+        {/* Old line number */}
+        <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
+          {line.oldLineNumber ?? ''}
         </div>
+        {/* New line number */}
+        <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
+          {line.newLineNumber ?? ''}
+        </div>
+        {/* Gutter: '+' button or speech-bubble icon */}
+        <div className="flex w-6 shrink-0 select-none items-center justify-center">
+          {hasComment ? (
+            <span className="text-[10px] text-blue-400" title="Has comment">
+              💬
+            </span>
+          ) : (
+            <button
+              className="invisible flex h-4 w-4 items-center justify-center rounded text-xs leading-none text-gray-500 hover:bg-gray-700 hover:text-gray-200 group-hover:visible"
+              onClick={() => onOpenComment(lineIndex)}
+              title="Add comment"
+            >
+              +
+            </button>
+          )}
+        </div>
+        {/* Diff marker */}
+        <div className={`w-4 shrink-0 select-none ${textClass}`}>{marker}</div>
+        {/* Content: highlighted HTML or plain text fallback */}
+        {highlightHtml ? (
+          <div
+            className="flex-1 overflow-hidden whitespace-pre"
+            dangerouslySetInnerHTML={{ __html: highlightHtml }}
+          />
+        ) : (
+          <div className={`flex-1 overflow-hidden whitespace-pre ${textClass}`}>
+            {codeContent}
+          </div>
+        )}
+      </div>
+      {/* Inline CommentBox rendered below the line when open */}
+      {isCommentOpen && (
+        <CommentBox
+          onSubmit={(text) => onAddComment(filePath, line.lineNumber, text)}
+          onCancel={onCloseComment}
+        />
       )}
     </div>
   )
