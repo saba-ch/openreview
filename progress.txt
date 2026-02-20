@@ -1,0 +1,177 @@
+# Ralph Progress Log
+## 2026-02-20 - US-012
+- Updated src/renderer/App.tsx:
+  - Refactored `loadRepo` to return `DiffFile[] | null` instead of setting selectedFile internally
+  - Updated `handleOpenFolder` to call `setSelectedFile` after `loadRepo` returns
+  - Rewrote `handleRefresh`: saves `prevSelectedPath`, calls `loadRepo`, builds `validLines` Set (filePath:lineNumber) and `newFilePathSet` from new diff, iterates all comments and calls `markOutdated` for any whose file or line no longer exists, then preserves previously selected file (or falls back to first)
+  - Added `useEffect` for Cmd+R / Ctrl+R keyboard shortcut that calls `handleRefresh`
+  - Added `selectedFile` and `markOutdated` subscriptions from stores
+  - Added `import type { DiffFile }` from shared types
+- Files changed: src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - Use `useCommentsStore.getState().comments` inside callbacks to read current comments without stale closure issues
+  - Refactor shared fetch helpers to return data rather than setting state internally — callers can then act on the result (mark outdated, set selected file, etc.)
+  - Cmd+R keyboard shortcut: listen on `window` in a `useEffect` with the callback in the dep array; use `e.preventDefault()` to suppress browser/electron default reload
+  - `markOutdated` action is a stable Zustand ref — safe to subscribe with `useCommentsStore(state => state.markOutdated)` and include in `useCallback` deps
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+
+## 2026-02-20 - US-011
+- Added `CLIPBOARD_WRITE = 'clipboard:write'` IPC constant to src/shared/types.ts
+- Updated src/main/index.ts: imported `clipboard` from electron, registered ipcMain handler for CLIPBOARD_WRITE using `clipboard.writeText(text)`
+- Updated src/preload/index.ts: exposed `writeClipboard(text: string)` via contextBridge
+- Updated src/renderer/electron.d.ts: added `writeClipboard(text: string): Promise<void>` to Window.electron type
+- Updated src/renderer/App.tsx: subscribed to `comments` from useCommentsStore, computed `hasComments`, implemented `handleCopyReview` (sorts by filePath then lineNumber, formats as `<filePath>:<lineNumber> — "<text>"` with `[OUTDATED]` prefix, calls `window.electron.writeClipboard`, shows toast for 2s via `toastVisible` state), rendered fixed-position toast div
+- Updated src/renderer/components/Toolbar.tsx: added `hasComments: boolean` prop; Copy Review button disabled when `!hasComments` (not just when repo not loaded)
+- Files changed: src/shared/types.ts, src/main/index.ts, src/preload/index.ts, src/renderer/electron.d.ts, src/renderer/App.tsx, src/renderer/components/Toolbar.tsx
+- **Learnings for future iterations:**
+  - Use Electron's `clipboard` module in main process (not renderer) — expose via IPC + contextBridge
+  - Toast is simplest as a fixed-position div with `pointer-events-none` toggled by a boolean state + `setTimeout` to auto-dismiss
+  - Copy Review button disabled state is independent of isRepoLoaded — it depends on comment count, so pass `hasComments` prop from App rather than computing inside Toolbar
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+## 2026-02-20 - US-010
+- Updated src/renderer/components/CommentBox.tsx: added `initialText?: string` prop; initializes textarea state with `initialText ?? ''` for pre-filling in edit mode.
+- Updated src/renderer/components/DiffLine.tsx: added `comment?: Comment`, `isEditOpen`, `onEditComment`, `onCancelEdit`, `onUpdateComment`, `onDeleteComment` props. Renders inline comment display (always visible) when `comment` exists and `!isEditOpen` — shows text, Edit button, Delete button. Outdated comments get amber border + 'Outdated' label. Edit button opens CommentBox pre-filled via `initialText`. Delete button calls `onDeleteComment(comment.id)`. CommentBox for new comment now guarded by `!comment && isCommentOpen`.
+- Updated src/renderer/components/DiffView.tsx: subscribed to `updateComment` and `deleteComment` from store; added `editCommentIndex` state; reset `editCommentIndex` on file change via useEffect; added `handleEditComment`, `handleCancelEdit`, `handleUpdateComment`, `handleDeleteComment` callbacks; passes `comment` object and new props to DiffLineComponent.
+- Files changed: src/renderer/components/CommentBox.tsx, src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx
+- **Learnings for future iterations:**
+  - Guard new-comment CommentBox with `!comment && isCommentOpen` — prevents add-box opening when a comment already exists on that line
+  - Pass the full `Comment` object (not just boolean) to DiffLine so it can render text and pass `comment.id` to update/delete handlers
+  - `editCommentIndex` mirrors `openCommentIndex` pattern — same reset-on-file-change useEffect handles both
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+
+## 2026-02-20 - US-009
+- Created src/renderer/components/CommentBox.tsx: memoized component with textarea (autofocused via useEffect), Comment/Cancel buttons. Disabled submit when text is empty.
+- Updated src/renderer/components/DiffLine.tsx: added lineIndex, filePath, hasComment, isCommentOpen, onOpenComment, onCloseComment, onAddComment props. Hover group shows invisible '+' button that becomes visible on row hover. Speech-bubble icon (💬) replaces '+' when hasComment. CommentBox rendered below line when isCommentOpen. Hunk-header uses minHeight:22 instead of h-full (parent no longer has fixed height).
+- Updated src/renderer/components/DiffView.tsx: added openCommentIndex state, useEffect to reset on file change. Added measureElement option to virtualizer for dynamic row sizing. Removed fixed height from virtual item divs (now measured via ResizeObserver). Added data-index + ref={virtualizer.measureElement} to each row. Subscribes to comments state for hasComment lookup. Stable handleOpenComment/handleCloseComment/handleAddComment callbacks via useCallback.
+- Files changed: src/renderer/components/CommentBox.tsx, src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx
+- **Learnings for future iterations:**
+  - Remove fixed `height: virtualItem.size` from virtualizer row divs when using measureElement — let content height determine size; virtualizer measures via ResizeObserver
+  - Add `data-index={virtualItem.index}` and `ref={virtualizer.measureElement}` to each virtual row div for auto-measurement
+  - Also pass `measureElement: (el) => el.getBoundingClientRect().height` to useVirtualizer options
+  - Hunk-header rows used `h-full` which requires fixed-height parent — switch to `minHeight: 22` (inline style) when parent height is auto
+  - Use `useEffect(() => { resetState() }, [selectedFile])` to reset per-file state when file changes
+  - crypto.randomUUID() is available in renderer (DOM lib); no import needed
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+
+Started: Fri Feb 20 19:12:04 CET 2026
+---
+
+## 2026-02-20 - US-008
+- Created src/renderer/workers/highlighter.worker.ts: Web Worker using shiki (github-dark theme, 23 bundled langs). Accepts `{ id, code, lang }`, strips `<pre><code>` wrapper from codeToHtml output, responds with `{ id, html }`. Falls back to 'text' lang then plain-escaped text on error.
+- Created src/renderer/hooks/useHighlighter.ts: manages the worker lifecycle (create on mount, terminate on unmount), caches results as `Map<filePath, Map<lineIndex, html>>`, sends visible lines ±20 to worker, returns `Map<number, string>` for the current file. Uses `useReducer` forceUpdate to re-render when highlights arrive.
+- Updated src/renderer/components/DiffLine.tsx: added `highlightHtml?: string` prop; separates diff marker (+/-/space) into its own `<div>` with text color; renders `dangerouslySetInnerHTML` for highlighted HTML, falls back to plain text.
+- Updated src/renderer/components/DiffView.tsx: computes visible range from virtualizer items, calls useHighlighter, passes `highlights.get(virtualItem.index)` to each DiffLineComponent.
+- Files changed: src/renderer/workers/highlighter.worker.ts, src/renderer/hooks/useHighlighter.ts, src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx
+- **Learnings for future iterations:**
+  - Use `/// <reference lib="WebWorker" />` at the top of worker files so TypeScript types `self` and `postMessage` as DedicatedWorkerGlobalScope (not Window)
+  - Vite resolves `new Worker(new URL('../workers/foo.worker.ts', import.meta.url), { type: 'module' })` automatically — no extra vite config needed for electron-vite renderer
+  - shiki `codeToHtml` wraps output in `<pre ...><code>` — strip with `.replace(/^<pre[^>]*><code[^>]*>/, '').replace(/<\/code><\/pre>\s*$/, '')`
+  - Strip the diff marker (first char of line.content) before sending to shiki — avoids highlighting `+`/`-` as code operators
+  - Cache keyed as `${filePath}:${lineIndex}` with `lastIndexOf(':')` to split correctly even if filePath contains colons
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+## 2026-02-20 - US-007
+- Created src/renderer/components/DiffLine.tsx: memoized single-line renderer with color-coded backgrounds (green/red/neutral), gutter with oldLineNumber + newLineNumber, hunk-header styled as full-width gray separator
+- Created src/renderer/components/DiffView.tsx: virtualized diff view using @tanstack/react-virtual (ROW_HEIGHT=22px), flattens all hunks' lines via flatMap, shows "No changes" placeholder when file has 0 hunks
+- Updated src/renderer/App.tsx: replaced placeholder div with <DiffView /> in the loaded state
+- Files changed: src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx, src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - DiffLine content from parse-diff includes the leading +/-/space prefix character — display as-is with `whitespace-pre`
+  - hunk-header DiffLines have null oldLineNumber/newLineNumber; content is the @@ ... @@ string from chunk.content
+  - DiffView flattens selectedFile.hunks.flatMap(h => h.lines) — no need to track hunk boundaries separately
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+## 2026-02-20 - US-006
+- Created src/renderer/components/Sidebar.tsx: virtualized sidebar with Staged/Unstaged sections, filter input, Stage All/Unstage All buttons
+- FileRow component: checkbox for stage toggle, filename + dir, green additions / red deletions
+- Updated src/renderer/App.tsx: renders <Sidebar onRefreshDiff={handleRefresh} /> alongside main content area when repo is loaded
+- Files changed: src/renderer/components/Sidebar.tsx, src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - @tanstack/react-virtual useVirtualizer: use `itemsRef` pattern (ref that mirrors memoized items) to keep `estimateSize` callback stable while accessing current items
+  - For checkbox toggling in a clickable row, use `onClick` (not `onChange`) on the checkbox with `e.stopPropagation()` to prevent row click handler from firing
+  - Still pass `onChange={() => {}}` to avoid React uncontrolled input warning when using `onClick` on checkbox
+  - Sidebar uses `window.electron.stageFile` / `window.electron.unstageFile` directly; calls `onRefreshDiff` (passed from App) to reload diff after each operation
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+## Codebase Patterns
+- preload/index.ts exposes IPC calls via contextBridge; renderer accesses them as `window.electron.*`
+- Declare `window.electron` types in src/renderer/electron.d.ts (included by tsconfig.web.json via `src/renderer/**/*`)
+- React components live in src/renderer/components/; use Zustand selector pattern for store access
+- parse-diff Change types: 'add' uses `ln` (newLine), 'del' uses `ln` (oldLine), 'normal' uses `ln1`/`ln2`
+- ipcMain handlers are registered before createWindow() to ensure they're ready when renderer loads
+- Use `electron-vite` for building: main/preload use SSR bundle mode, renderer uses standard Vite build
+- electron-vite renderer root is `src/renderer/` — `index.html` script src must be relative (`./main.tsx`), not absolute (`/src/renderer/main.tsx`)
+- `"type": "module"` in package.json is needed to avoid Node ESM warnings with `postcss.config.js`
+- Typecheck command: run `bun run typecheck` (not `tsc` directly — bun resolves deps correctly)
+- Build output goes to `out/` (electron-vite default), not `dist/`
+- Zustand stores live in src/renderer/store/; use selector pattern `useStore(state => state.field)` for stable refs
+- useCommentsStore keys comments as `${filePath}:${lineNumber}`; getCommentsForFile/getComment use get() for current state
+
+## 2026-02-20 - US-005
+- Created src/renderer/electron.d.ts: global Window interface augmentation with `window.electron` types
+- Created src/renderer/components/Toolbar.tsx: toolbar with Open Folder, Refresh, Copy Review buttons (latter two disabled until repo loaded)
+- Updated src/renderer/App.tsx: integrates Toolbar, handles openFolder/refresh/copyReview callbacks, shows LoadingSkeleton during fetch, 'Not a git repository' error on IPC failure, empty/loaded states
+- Files changed: src/renderer/electron.d.ts, src/renderer/components/Toolbar.tsx, src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - `window.electron` types must be declared in a .d.ts file under src/renderer/ so tsconfig.web.json picks them up
+  - Any error from `window.electron.getRepoDiff()` is treated as "Not a git repository" — git commands fail with exit 128 for non-git dirs
+  - Zustand setters (setLoading, setFiles, etc.) are stable refs — safe to list in useCallback deps
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+## 2026-02-20 - US-004
+- Created src/renderer/store/repo.ts: useRepoStore with rootPath, files, selectedFile, isLoading + setters
+- Created src/renderer/store/comments.ts: useCommentsStore with comments record keyed by `${filePath}:${lineNumber}`
+- useCommentsStore exposes: addComment, updateComment, deleteComment, markOutdated, getCommentsForFile, getComment
+- Files changed: src/renderer/store/repo.ts, src/renderer/store/comments.ts
+- **Learnings for future iterations:**
+  - Run typecheck via `bun run typecheck` not raw `tsc` — bun resolves node_modules correctly for electron-vite projects
+  - Zustand v5 `create<State>((set, get) => ...)` — same API as v4 for basic stores
+  - getCommentsForFile and getComment are stable function refs that use get() internally; components must also subscribe to state.comments for reactivity
+  - deleteComment uses destructuring `const { [key]: _removed, ...rest } = state.comments` to omit a key cleanly
+---
+
+## 2026-02-20 - US-003
+- Implemented git operations in Electron main process
+- Created src/main/git.ts: runGit helper, mapParsedFiles (parse-diff → DiffFile[]), getRepoDiff, stageFile, unstageFile
+- Updated src/main/index.ts: added ipcMain handlers for GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG
+- Updated src/preload/index.ts: exposed openDialog, getRepoDiff, stageFile, unstageFile via contextBridge
+- **Learnings for future iterations:**
+  - parse-diff 'add' changes use `ln` for new line number; 'del' uses `ln` for old line number; 'normal' uses `ln1`/`ln2`
+  - Hunk header is included as a DiffLine of type 'hunk-header' at the start of each hunk's lines array
+  - The preload exposes `window.electron` API — renderer components should call these for all IPC
+  - OPEN_DIALOG handler uses dialog.showOpenDialog with 'openDirectory' property, returns null if canceled
+---
+
+## 2026-02-20 - US-002
+- Populated src/shared/types.ts with all required exported types and IPC constants
+- Files changed: src/shared/types.ts
+- **Learnings for future iterations:**
+  - IPC channel constants are exported as `as const` strings, not enums
+  - DiffLine.type uses a string union, not an enum
+  - All downstream stories (US-003+) can import types from src/shared/types.ts
+---
+
+## 2026-02-20 - US-001
+- Scaffolded Electron + React + Bun + Tailwind project from scratch
+- Created: package.json, bunfig.toml, electron.vite.config.ts, tsconfig.json, tsconfig.node.json, tsconfig.web.json, tailwind.config.js, postcss.config.js
+- Created: src/main/index.ts (BrowserWindow, loads renderer), src/preload/index.ts (contextBridge stub)
+- Created: src/renderer/index.html, src/renderer/main.tsx, src/renderer/App.tsx, src/renderer/index.css
+- Created: src/shared/types.ts (placeholder comment)
+- **Learnings for future iterations:**
+  - electron-vite handles main, preload, renderer as separate Vite builds
+  - Renderer index.html script path must be relative, not absolute
+  - Both `bun run build` and `bun run typecheck` pass cleanly
+  - Branch: ralph/openreview-app created from main
+---
