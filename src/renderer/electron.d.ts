@@ -1,4 +1,4 @@
-import type { DiffFile } from '../shared/types'
+import type { DiffFile, Comment } from '../shared/types'
 
 declare global {
   interface Window {
@@ -8,6 +8,9 @@ declare global {
       stageFile(rootPath: string, filePath: string): Promise<void>
       unstageFile(rootPath: string, filePath: string): Promise<void>
       writeClipboard(text: string): Promise<void>
+      syncComments(comments: Record<string, Comment>): void
+      onMcpAddComment(callback: (comment: Comment) => void): () => void
+      onMcpDeleteComment(callback: (id: string) => void): () => void
     }
   }
 }

@@ -85,6 +85,24 @@ export default function App(): React.ReactElement {
     setSelectedFile(preserved ?? (newFiles.length > 0 ? newFiles[0] : null))
   }, [rootPath, selectedFile, loadRepo, markOutdated, setSelectedFile])
 
+  // Sync renderer comment store → main process on every change
+  useEffect(() => {
+    return useCommentsStore.subscribe((state) => {
+      window.electron.syncComments(state.comments)
+    })
+  }, [])
+
+  // Listen for MCP-pushed add/delete and update Zustand
+  useEffect(() => {
+    const unsubAdd = window.electron.onMcpAddComment((comment) => {
+      useCommentsStore.getState().addComment(comment)
+    })
+    const unsubDel = window.electron.onMcpDeleteComment((id) => {
+      useCommentsStore.getState().deleteComment(id)
+    })
+    return () => { unsubAdd(); unsubDel() }
+  }, [])
+
   // Cmd+R / Ctrl+R keyboard shortcut for refresh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

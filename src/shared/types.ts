@@ -41,3 +41,6 @@ export const GIT_STAGE = 'git:stage' as const
 export const GIT_UNSTAGE = 'git:unstage' as const
 export const OPEN_DIALOG = 'dialog:open' as const
 export const CLIPBOARD_WRITE = 'clipboard:write' as const
+export const SYNC_COMMENTS = 'sync:comments' as const       // renderer → main
+export const MCP_ADD_COMMENT = 'mcp:addComment' as const   // main → renderer
+export const MCP_DELETE_COMMENT = 'mcp:deleteComment' as const // main → renderer

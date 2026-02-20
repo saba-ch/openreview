@@ -1,7 +1,9 @@
 import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron'
 import { join } from 'path'
 import { getRepoDiff, stageFile, unstageFile } from './git.js'
-import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE } from '../shared/types.js'
+import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE, SYNC_COMMENTS } from '../shared/types.js'
+import { mainStore } from './store.js'
+import { startMcpServer } from './mcp.js'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -22,8 +24,15 @@ function createWindow(): void {
 }
 
 function registerIpcHandlers(): void {
-  ipcMain.handle(GIT_DIFF, (_event, rootPath: string) => {
-    return getRepoDiff(rootPath)
+  ipcMain.handle(GIT_DIFF, async (_event, rootPath: string) => {
+    mainStore.rootPath = rootPath
+    const diff = await getRepoDiff(rootPath)
+    mainStore.diffCache = diff
+    return diff
+  })
+
+  ipcMain.on(SYNC_COMMENTS, (_event, comments) => {
+    mainStore.comments = comments
   })
 
   ipcMain.handle(GIT_STAGE, (_event, rootPath: string, filePath: string) => {
@@ -51,6 +60,7 @@ function registerIpcHandlers(): void {
 app.whenReady().then(() => {
   registerIpcHandlers()
   createWindow()
+  startMcpServer(() => BrowserWindow.getAllWindows()[0] ?? null)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
