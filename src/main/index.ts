@@ -1,5 +1,7 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { getRepoDiff, stageFile, unstageFile } from './git.js'
+import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG } from '../shared/types.js'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -19,7 +21,31 @@ function createWindow(): void {
   }
 }
 
+function registerIpcHandlers(): void {
+  ipcMain.handle(GIT_DIFF, (_event, rootPath: string) => {
+    return getRepoDiff(rootPath)
+  })
+
+  ipcMain.handle(GIT_STAGE, (_event, rootPath: string, filePath: string) => {
+    return stageFile(rootPath, filePath)
+  })
+
+  ipcMain.handle(GIT_UNSTAGE, (_event, rootPath: string, filePath: string) => {
+    return unstageFile(rootPath, filePath)
+  })
+
+  ipcMain.handle(OPEN_DIALOG, (_event) => {
+    return dialog.showOpenDialog({
+      properties: ['openDirectory']
+    }).then((result) => {
+      if (result.canceled || result.filePaths.length === 0) return null
+      return result.filePaths[0]
+    })
+  })
+}
+
 app.whenReady().then(() => {
+  registerIpcHandlers()
   createWindow()
 
   app.on('activate', () => {
