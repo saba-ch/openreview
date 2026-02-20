@@ -12,7 +12,7 @@ function parseHunkRange(header: string): { oldStart: number; oldCount: number } 
 }
 
 type ViewItem =
-  | { kind: 'file-header'; file: DiffFile }
+  | { kind: 'file-header'; file: DiffFile; fileKey: string; isCollapsed: boolean }
   | {
       kind: 'line'
       line: DiffLineType
@@ -31,15 +31,29 @@ export default function DiffView(): React.ReactElement {
 
   const [openCommentKey, setOpenCommentKey] = useState<string | null>(null)
   const [editCommentKey, setEditCommentKey] = useState<string | null>(null)
+  const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set())
 
   const parentRef = useRef<HTMLDivElement>(null)
 
-  // Flatten all files into a single virtual list: file-header + lines per file
+  const toggleCollapse = useCallback((fileKey: string) => {
+    setCollapsedFiles((prev) => {
+      const next = new Set(prev)
+      if (next.has(fileKey)) next.delete(fileKey)
+      else next.add(fileKey)
+      return next
+    })
+  }, [])
+
+  // Flatten all files into a single virtual list
   const items = useMemo((): ViewItem[] => {
     const result: ViewItem[] = []
     for (const file of files) {
       if (file.hunks.length === 0) continue
-      result.push({ kind: 'file-header', file })
+      const fileKey = `${file.filePath}:${file.staged}`
+      const isCollapsed = collapsedFiles.has(fileKey)
+      result.push({ kind: 'file-header', file, fileKey, isCollapsed })
+
+      if (isCollapsed) continue
 
       // Compute unmodified gap counts per hunk boundary
       const unmodifiedCounts = new Map<number, number>()
@@ -68,7 +82,7 @@ export default function DiffView(): React.ReactElement {
       }
     }
     return result
-  }, [files])
+  }, [files, collapsedFiles])
 
   const itemsRef = useRef<ViewItem[]>([])
   itemsRef.current = items
@@ -79,7 +93,7 @@ export default function DiffView(): React.ReactElement {
     estimateSize: useCallback((i: number) => {
       const item = itemsRef.current[i]
       if (!item || item.kind !== 'file-header') return 20
-      return i === 0 ? 40 : 52 // first file: no gap; subsequent: 12px gap + 40px header
+      return i === 0 ? 40 : 52
     }, []),
     measureElement: (el) => el.getBoundingClientRect().height,
   })
@@ -137,7 +151,14 @@ export default function DiffView(): React.ReactElement {
           let content: React.ReactNode
 
           if (item.kind === 'file-header') {
-            content = <FileHeaderRow file={item.file} isFirst={virtualItem.index === 0} />
+            content = (
+              <FileHeaderRow
+                file={item.file}
+                isFirst={virtualItem.index === 0}
+                isCollapsed={item.isCollapsed}
+                onToggle={() => toggleCollapse(item.fileKey)}
+              />
+            )
           } else {
             const { line, file, fileLineIndex, unmodifiedCount } = item
             const itemKey = `${file.filePath}:${fileLineIndex}`
@@ -189,16 +210,35 @@ export default function DiffView(): React.ReactElement {
 function FileHeaderRow({
   file,
   isFirst,
+  isCollapsed,
+  onToggle,
 }: {
   file: DiffFile
   isFirst: boolean
+  isCollapsed: boolean
+  onToggle: () => void
 }): React.ReactElement {
   return (
     <div style={{ paddingTop: isFirst ? 0 : 12 }}>
       <div
-        className="flex items-center border-b border-t border-line bg-elevated px-4"
+        className="flex cursor-pointer items-center border-b border-t border-line bg-elevated px-4 hover:bg-overlay"
         style={{ height: 40 }}
+        onClick={onToggle}
       >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-2 shrink-0 text-ink-ghost transition-transform duration-150"
+          style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+        >
+          <path d="M2 4l4 4 4-4" />
+        </svg>
         <span className="font-mono text-[11px] text-ink">{file.filePath}</span>
         {file.additions > 0 && (
           <span className="ml-3 font-mono text-[11px] text-diff-add-fg">+{file.additions}</span>
@@ -208,19 +248,6 @@ function FileHeaderRow({
             -{file.deletions}
           </span>
         )}
-        <svg
-          className="ml-auto text-ink-ghost"
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M2 4l4 4 4-4" />
-        </svg>
       </div>
     </div>
   )

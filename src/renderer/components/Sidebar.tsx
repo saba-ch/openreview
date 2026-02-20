@@ -1,17 +1,230 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useRepoStore } from '../store/repo'
 import { DiffFile } from '../../shared/types'
 
-function basename(filePath: string): string {
-  return filePath.split('/').pop() ?? filePath
+// ─── Tree types ───────────────────────────────────────────────────────────────
+
+interface TreeDir {
+  kind: 'dir'
+  name: string
+  fullPath: string
+  children: TreeNode[]
 }
 
-function dirname(filePath: string): string {
-  const parts = filePath.split('/')
-  if (parts.length <= 1) return ''
-  return parts.slice(0, -1).join('/')
+interface TreeFile {
+  kind: 'file'
+  name: string
+  file: DiffFile
 }
+
+type TreeNode = TreeDir | TreeFile
+
+// ─── Tree builders ────────────────────────────────────────────────────────────
+
+function buildTree(files: DiffFile[]): TreeNode[] {
+  const root: TreeNode[] = []
+  for (const file of files) {
+    const parts = file.filePath.split('/')
+    let current = root
+    let currentPath = ''
+    for (let i = 0; i < parts.length - 1; i++) {
+      currentPath = currentPath ? `${currentPath}/${parts[i]}` : parts[i]
+      let dir = current.find((n): n is TreeDir => n.kind === 'dir' && n.name === parts[i])
+      if (!dir) {
+        dir = { kind: 'dir', name: parts[i], fullPath: currentPath, children: [] }
+        current.push(dir)
+      }
+      current = dir.children
+    }
+    current.push({ kind: 'file', name: parts[parts.length - 1], file })
+  }
+  return root
+}
+
+function pruneTree(nodes: TreeNode[], filter: string): TreeNode[] {
+  return nodes.flatMap((node) => {
+    if (node.kind === 'file') {
+      return node.file.filePath.toLowerCase().includes(filter) ? [node] : []
+    }
+    const prunedChildren = pruneTree(node.children, filter)
+    return prunedChildren.length > 0 ? [{ ...node, children: prunedChildren }] : []
+  })
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0 transition-transform duration-100"
+      style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+    >
+      <path d="M3 2l4 3-4 3" />
+    </svg>
+  )
+}
+
+function FolderIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+    >
+      <path d="M1 3.5h3.5l1 1.5H11a.5.5 0 0 1 .5.5V9a.5.5 0 0 1-.5.5H1A.5.5 0 0 1 .5 9V4a.5.5 0 0 1 .5-.5Z" />
+    </svg>
+  )
+}
+
+function FileIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 11 11"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+    >
+      <path d="M2 1h5l2.5 2.5V10a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V1.5A.5.5 0 0 1 2 1Z" />
+      <path d="M7 1v2.5H9.5" />
+    </svg>
+  )
+}
+
+// ─── Tree node renderers ──────────────────────────────────────────────────────
+
+interface TreeNodesProps {
+  nodes: TreeNode[]
+  depth: number
+  closedDirs: Set<string>
+  filterActive: boolean
+  onToggleDir: (path: string) => void
+  selectedFile: DiffFile | null
+  onSelectFile: (file: DiffFile) => void
+  onToggleStage: (file: DiffFile, e: React.MouseEvent) => void
+}
+
+function TreeNodes(props: TreeNodesProps) {
+  return (
+    <>
+      {props.nodes.map((node) =>
+        node.kind === 'dir' ? (
+          <DirRow key={node.fullPath} node={node} {...props} />
+        ) : (
+          <FileRow
+            key={`${node.file.filePath}:${node.file.staged}`}
+            node={node}
+            depth={props.depth}
+            selectedFile={props.selectedFile}
+            onSelectFile={props.onSelectFile}
+            onToggleStage={props.onToggleStage}
+          />
+        ),
+      )}
+    </>
+  )
+}
+
+function DirRow({
+  node,
+  depth,
+  closedDirs,
+  filterActive,
+  onToggleDir,
+  selectedFile,
+  onSelectFile,
+  onToggleStage,
+}: TreeNodesProps & { node: TreeDir }) {
+  const isOpen = filterActive || !closedDirs.has(node.fullPath)
+  return (
+    <>
+      <div
+        className="flex cursor-pointer items-center gap-1 text-ink-ghost hover:bg-overlay"
+        style={{ height: 24, paddingLeft: 8 + depth * 14 }}
+        onClick={() => onToggleDir(node.fullPath)}
+      >
+        <ChevronIcon open={isOpen} />
+        <FolderIcon />
+        <span className="ml-0.5 truncate font-mono text-[11px]">{node.name}</span>
+      </div>
+      {isOpen && (
+        <TreeNodes
+          nodes={node.children}
+          depth={depth + 1}
+          closedDirs={closedDirs}
+          filterActive={filterActive}
+          onToggleDir={onToggleDir}
+          selectedFile={selectedFile}
+          onSelectFile={onSelectFile}
+          onToggleStage={onToggleStage}
+        />
+      )}
+    </>
+  )
+}
+
+function FileRow({
+  node,
+  depth,
+  selectedFile,
+  onSelectFile,
+  onToggleStage,
+}: {
+  node: TreeFile
+  depth: number
+  selectedFile: DiffFile | null
+  onSelectFile: (file: DiffFile) => void
+  onToggleStage: (file: DiffFile, e: React.MouseEvent) => void
+}) {
+  const { file } = node
+  const isSelected =
+    selectedFile?.filePath === file.filePath && selectedFile?.staged === file.staged
+  return (
+    <div
+      className={`flex cursor-pointer items-center gap-1.5 border-l-2 ${
+        isSelected ? 'border-accent bg-overlay text-ink' : 'border-transparent text-ink-dim hover:bg-overlay'
+      }`}
+      style={{ height: 26, paddingLeft: 8 + depth * 14 }}
+      onClick={() => onSelectFile(file)}
+    >
+      <input
+        type="checkbox"
+        checked={file.staged}
+        onChange={() => {}}
+        onClick={(e) => onToggleStage(file, e)}
+        className="h-3 w-3 shrink-0 cursor-pointer accent-accent"
+      />
+      <FileIcon />
+      <span className={`truncate font-mono text-[11px] ${isSelected ? 'text-ink' : 'text-ink-dim'}`}>
+        {node.name}
+      </span>
+      <div className="ml-auto flex shrink-0 items-center gap-1 pr-2 font-mono text-[9px]">
+        {file.additions > 0 && <span className="text-diff-add-fg">+{file.additions}</span>}
+        {file.deletions > 0 && <span className="text-diff-remove-fg">-{file.deletions}</span>}
+      </div>
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 interface SidebarProps {
   onRefreshDiff: () => Promise<void>
@@ -25,28 +238,28 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
 
   const [filter, setFilter] = useState('')
   const [activeTab, setActiveTab] = useState<'unstaged' | 'staged'>('unstaged')
+  const [closedDirs, setClosedDirs] = useState<Set<string>>(new Set())
 
   const lowerFilter = filter.toLowerCase()
 
-  const stagedFiles = useMemo(
-    () => files.filter((f) => f.staged && f.filePath.toLowerCase().includes(lowerFilter)),
-    [files, lowerFilter]
-  )
-
-  const unstagedFiles = useMemo(
-    () => files.filter((f) => !f.staged && f.filePath.toLowerCase().includes(lowerFilter)),
-    [files, lowerFilter]
-  )
-
+  const stagedFiles = useMemo(() => files.filter((f) => f.staged), [files])
+  const unstagedFiles = useMemo(() => files.filter((f) => !f.staged), [files])
   const activeFiles = activeTab === 'staged' ? stagedFiles : unstagedFiles
 
-  const parentRef = useRef<HTMLDivElement>(null)
+  const tree = useMemo(() => buildTree(activeFiles), [activeFiles])
+  const displayTree = useMemo(
+    () => (lowerFilter ? pruneTree(tree, lowerFilter) : tree),
+    [tree, lowerFilter],
+  )
 
-  const virtualizer = useVirtualizer({
-    count: activeFiles.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: useCallback(() => 30, []),
-  })
+  const handleToggleDir = useCallback((path: string) => {
+    setClosedDirs((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }, [])
 
   const handleToggleStage = useCallback(
     async (file: DiffFile, e: React.MouseEvent) => {
@@ -59,27 +272,23 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
       }
       await onRefreshDiff()
     },
-    [rootPath, onRefreshDiff]
+    [rootPath, onRefreshDiff],
   )
 
   const handleStageAll = useCallback(async () => {
     if (!rootPath) return
-    for (const f of unstagedFiles) {
-      await window.electron.stageFile(rootPath, f.filePath)
-    }
+    for (const f of unstagedFiles) await window.electron.stageFile(rootPath, f.filePath)
     await onRefreshDiff()
   }, [rootPath, unstagedFiles, onRefreshDiff])
 
   const handleUnstageAll = useCallback(async () => {
     if (!rootPath) return
-    for (const f of stagedFiles) {
-      await window.electron.unstageFile(rootPath, f.filePath)
-    }
+    for (const f of stagedFiles) await window.electron.unstageFile(rootPath, f.filePath)
     await onRefreshDiff()
   }, [rootPath, stagedFiles, onRefreshDiff])
 
   return (
-    <div className="flex w-60 shrink-0 flex-col border-r border-line bg-elevated">
+    <div className="flex w-56 shrink-0 flex-col border-r border-line bg-elevated">
       {/* Tab bar */}
       <div className="flex shrink-0 items-stretch border-b border-line" style={{ minHeight: 34 }}>
         <button
@@ -108,7 +317,6 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
             {stagedFiles.length}
           </span>
         </button>
-        {/* Stage / unstage all button */}
         <div className="flex items-center pr-1.5">
           {activeTab === 'unstaged' ? (
             <button
@@ -157,88 +365,21 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
         </div>
       </div>
 
-      {/* Virtual list */}
-      <div ref={parentRef} className="flex-1 overflow-y-auto">
-        <div
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualItem) => {
-            const file = activeFiles[virtualItem.index]
-            return (
-              <div
-                key={virtualItem.key}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${virtualItem.size}px`,
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
-                <FileRow
-                  file={file}
-                  isSelected={
-                    selectedFile?.filePath === file.filePath &&
-                    selectedFile?.staged === file.staged
-                  }
-                  onSelect={() => setSelectedFile(file)}
-                  onToggleStage={handleToggleStage}
-                />
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface FileRowProps {
-  file: DiffFile
-  isSelected: boolean
-  onSelect: () => void
-  onToggleStage: (file: DiffFile, e: React.MouseEvent) => void
-}
-
-function FileRow({ file, isSelected, onSelect, onToggleStage }: FileRowProps): React.ReactElement {
-  const name = basename(file.filePath)
-  const dir = dirname(file.filePath)
-
-  return (
-    <div
-      onClick={onSelect}
-      className={`flex h-full cursor-pointer items-center gap-1.5 border-l-2 px-2 transition-colors ${
-        isSelected
-          ? 'border-accent bg-overlay text-ink'
-          : 'border-transparent hover:bg-overlay text-ink-dim'
-      }`}
-    >
-      <input
-        type="checkbox"
-        checked={file.staged}
-        onChange={() => {}}
-        onClick={(e) => onToggleStage(file, e)}
-        className="h-3 w-3 shrink-0 cursor-pointer accent-accent"
-      />
-      <div className="min-w-0 flex-1">
-        <div className={`truncate font-mono text-[11px] ${isSelected ? 'text-ink' : 'text-ink-dim'}`}>
-          {name}
-        </div>
-        {dir && (
-          <div className="truncate font-mono text-[9px] text-ink-ghost">{dir}</div>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-1 font-mono text-[9px]">
-        {file.additions > 0 && (
-          <span className="text-diff-add-fg">+{file.additions}</span>
-        )}
-        {file.deletions > 0 && (
-          <span className="text-diff-remove-fg">-{file.deletions}</span>
+      {/* File tree */}
+      <div className="flex-1 overflow-y-auto py-1">
+        {displayTree.length === 0 ? (
+          <p className="px-3 py-4 font-mono text-[11px] text-ink-ghost">no files</p>
+        ) : (
+          <TreeNodes
+            nodes={displayTree}
+            depth={0}
+            closedDirs={closedDirs}
+            filterActive={lowerFilter.length > 0}
+            onToggleDir={handleToggleDir}
+            selectedFile={selectedFile}
+            onSelectFile={setSelectedFile}
+            onToggleStage={handleToggleStage}
+          />
         )}
       </div>
     </div>
