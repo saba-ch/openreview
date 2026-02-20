@@ -1,0 +1,6 @@
+[install]
+# Use the lockfile for reproducible installs
+frozen = false
+
+[install.cache]
+disable = false
