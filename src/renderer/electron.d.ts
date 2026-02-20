@@ -7,6 +7,7 @@ declare global {
       getRepoDiff(rootPath: string): Promise<DiffFile[]>
       stageFile(rootPath: string, filePath: string): Promise<void>
       unstageFile(rootPath: string, filePath: string): Promise<void>
+      writeClipboard(text: string): Promise<void>
     }
   }
 }

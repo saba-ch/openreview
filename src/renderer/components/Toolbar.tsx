@@ -5,9 +5,10 @@ interface ToolbarProps {
   onOpenFolder: () => void
   onRefresh: () => void
   onCopyReview: () => void
+  hasComments: boolean
 }
 
-export default function Toolbar({ onOpenFolder, onRefresh, onCopyReview }: ToolbarProps): React.ReactElement {
+export default function Toolbar({ onOpenFolder, onRefresh, onCopyReview, hasComments }: ToolbarProps): React.ReactElement {
   const rootPath = useRepoStore((state) => state.rootPath)
   const isRepoLoaded = rootPath !== null
 
@@ -29,7 +30,7 @@ export default function Toolbar({ onOpenFolder, onRefresh, onCopyReview }: Toolb
       </button>
       <button
         onClick={onCopyReview}
-        disabled={!isRepoLoaded}
+        disabled={!hasComments}
         className="rounded bg-gray-700 px-3 py-1 text-sm text-white hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Copy Review

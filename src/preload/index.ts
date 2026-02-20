@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG } from '../shared/types.js'
+import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE } from '../shared/types.js'
 import type { DiffFile } from '../shared/types.js'
 
 contextBridge.exposeInMainWorld('electron', {
@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.invoke(GIT_STAGE, rootPath, filePath),
 
   unstageFile: (rootPath: string, filePath: string): Promise<void> =>
-    ipcRenderer.invoke(GIT_UNSTAGE, rootPath, filePath)
+    ipcRenderer.invoke(GIT_UNSTAGE, rootPath, filePath),
+
+  writeClipboard: (text: string): Promise<void> =>
+    ipcRenderer.invoke(CLIPBOARD_WRITE, text)
 })

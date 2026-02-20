@@ -40,3 +40,4 @@ export const GIT_DIFF = 'git:diff' as const
 export const GIT_STAGE = 'git:stage' as const
 export const GIT_UNSTAGE = 'git:unstage' as const
 export const OPEN_DIALOG = 'dialog:open' as const
+export const CLIPBOARD_WRITE = 'clipboard:write' as const

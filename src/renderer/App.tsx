@@ -3,15 +3,19 @@ import Toolbar from './components/Toolbar'
 import Sidebar from './components/Sidebar'
 import DiffView from './components/DiffView'
 import { useRepoStore } from './store/repo'
+import { useCommentsStore } from './store/comments'
 
 export default function App(): React.ReactElement {
   const [error, setError] = useState<string | null>(null)
+  const [toastVisible, setToastVisible] = useState(false)
   const rootPath = useRepoStore((state) => state.rootPath)
   const isLoading = useRepoStore((state) => state.isLoading)
   const setRootPath = useRepoStore((state) => state.setRootPath)
   const setFiles = useRepoStore((state) => state.setFiles)
   const setSelectedFile = useRepoStore((state) => state.setSelectedFile)
   const setLoading = useRepoStore((state) => state.setLoading)
+  const comments = useCommentsStore((state) => state.comments)
+  const hasComments = Object.keys(comments).length > 0
 
   const loadRepo = useCallback(
     async (path: string) => {
@@ -44,9 +48,23 @@ export default function App(): React.ReactElement {
     await loadRepo(rootPath)
   }, [rootPath, loadRepo])
 
-  const handleCopyReview = useCallback(() => {
-    // Will be implemented in US-011
-  }, [])
+  const handleCopyReview = useCallback(async () => {
+    const allComments = Object.values(comments)
+    const sorted = allComments.slice().sort((a, b) => {
+      if (a.filePath < b.filePath) return -1
+      if (a.filePath > b.filePath) return 1
+      return a.lineNumber - b.lineNumber
+    })
+    const text = sorted
+      .map((c) => {
+        const prefix = c.outdated ? '[OUTDATED] ' : ''
+        return `${c.filePath}:${c.lineNumber} — "${prefix}${c.text}"`
+      })
+      .join('\n')
+    await window.electron.writeClipboard(text)
+    setToastVisible(true)
+    setTimeout(() => setToastVisible(false), 2000)
+  }, [comments])
 
   return (
     <div className="flex h-screen w-screen flex-col bg-gray-950 text-gray-100">
@@ -54,7 +72,13 @@ export default function App(): React.ReactElement {
         onOpenFolder={handleOpenFolder}
         onRefresh={handleRefresh}
         onCopyReview={handleCopyReview}
+        hasComments={hasComments}
       />
+      {toastVisible && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 rounded bg-gray-700 px-4 py-2 text-sm text-white shadow-lg">
+          Review copied to clipboard
+        </div>
+      )}
       <main className="flex flex-1 overflow-hidden">
         {isLoading ? (
           <LoadingSkeleton />

@@ -1,7 +1,7 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron'
 import { join } from 'path'
 import { getRepoDiff, stageFile, unstageFile } from './git.js'
-import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG } from '../shared/types.js'
+import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE } from '../shared/types.js'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -41,6 +41,10 @@ function registerIpcHandlers(): void {
       if (result.canceled || result.filePaths.length === 0) return null
       return result.filePaths[0]
     })
+  })
+
+  ipcMain.handle(CLIPBOARD_WRITE, (_event, text: string) => {
+    clipboard.writeText(text)
   })
 }
 
