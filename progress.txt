@@ -2,6 +2,21 @@
 Started: Fri Feb 20 19:12:04 CET 2026
 ---
 
+## 2026-02-20 - US-008
+- Created src/renderer/workers/highlighter.worker.ts: Web Worker using shiki (github-dark theme, 23 bundled langs). Accepts `{ id, code, lang }`, strips `<pre><code>` wrapper from codeToHtml output, responds with `{ id, html }`. Falls back to 'text' lang then plain-escaped text on error.
+- Created src/renderer/hooks/useHighlighter.ts: manages the worker lifecycle (create on mount, terminate on unmount), caches results as `Map<filePath, Map<lineIndex, html>>`, sends visible lines ±20 to worker, returns `Map<number, string>` for the current file. Uses `useReducer` forceUpdate to re-render when highlights arrive.
+- Updated src/renderer/components/DiffLine.tsx: added `highlightHtml?: string` prop; separates diff marker (+/-/space) into its own `<div>` with text color; renders `dangerouslySetInnerHTML` for highlighted HTML, falls back to plain text.
+- Updated src/renderer/components/DiffView.tsx: computes visible range from virtualizer items, calls useHighlighter, passes `highlights.get(virtualItem.index)` to each DiffLineComponent.
+- Files changed: src/renderer/workers/highlighter.worker.ts, src/renderer/hooks/useHighlighter.ts, src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx
+- **Learnings for future iterations:**
+  - Use `/// <reference lib="WebWorker" />` at the top of worker files so TypeScript types `self` and `postMessage` as DedicatedWorkerGlobalScope (not Window)
+  - Vite resolves `new Worker(new URL('../workers/foo.worker.ts', import.meta.url), { type: 'module' })` automatically — no extra vite config needed for electron-vite renderer
+  - shiki `codeToHtml` wraps output in `<pre ...><code>` — strip with `.replace(/^<pre[^>]*><code[^>]*>/, '').replace(/<\/code><\/pre>\s*$/, '')`
+  - Strip the diff marker (first char of line.content) before sending to shiki — avoids highlighting `+`/`-` as code operators
+  - Cache keyed as `${filePath}:${lineIndex}` with `lastIndexOf(':')` to split correctly even if filePath contains colons
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
 ## 2026-02-20 - US-007
 - Created src/renderer/components/DiffLine.tsx: memoized single-line renderer with color-coded backgrounds (green/red/neutral), gutter with oldLineNumber + newLineNumber, hunk-header styled as full-width gray separator
 - Created src/renderer/components/DiffView.tsx: virtualized diff view using @tanstack/react-virtual (ROW_HEIGHT=22px), flattens all hunks' lines via flatMap, shows "No changes" placeholder when file has 0 hunks
