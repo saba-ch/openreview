@@ -12,11 +12,15 @@ export default function DiffView(): React.ReactElement {
   const selectedFile = useRepoStore((state) => state.selectedFile)
   const comments = useCommentsStore((state) => state.comments)
   const addComment = useCommentsStore((state) => state.addComment)
+  const updateComment = useCommentsStore((state) => state.updateComment)
+  const deleteComment = useCommentsStore((state) => state.deleteComment)
   const [openCommentIndex, setOpenCommentIndex] = useState<number | null>(null)
+  const [editCommentIndex, setEditCommentIndex] = useState<number | null>(null)
 
-  // Reset open comment box when selected file changes
+  // Reset open/edit state when selected file changes
   useEffect(() => {
     setOpenCommentIndex(null)
+    setEditCommentIndex(null)
   }, [selectedFile])
 
   const lines: DiffLineType[] = useMemo(() => {
@@ -63,6 +67,29 @@ export default function DiffView(): React.ReactElement {
     [addComment],
   )
 
+  const handleEditComment = useCallback((lineIndex: number) => {
+    setEditCommentIndex(lineIndex)
+  }, [])
+
+  const handleCancelEdit = useCallback(() => {
+    setEditCommentIndex(null)
+  }, [])
+
+  const handleUpdateComment = useCallback(
+    (id: string, text: string) => {
+      updateComment(id, text)
+      setEditCommentIndex(null)
+    },
+    [updateComment],
+  )
+
+  const handleDeleteComment = useCallback(
+    (id: string) => {
+      deleteComment(id)
+    },
+    [deleteComment],
+  )
+
   if (!selectedFile || selectedFile.hunks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -85,8 +112,10 @@ export default function DiffView(): React.ReactElement {
         {virtualItems.map((virtualItem) => {
           const line = lines[virtualItem.index]
           const lineIndex = virtualItem.index
-          const hasComment = !!comments[`${filePath}:${line.lineNumber}`]
+          const comment = comments[`${filePath}:${line.lineNumber}`]
+          const hasComment = !!comment
           const isCommentOpen = openCommentIndex === lineIndex
+          const isEditOpen = editCommentIndex === lineIndex
 
           return (
             <div
@@ -107,10 +136,16 @@ export default function DiffView(): React.ReactElement {
                 filePath={filePath}
                 highlightHtml={highlights.get(virtualItem.index)}
                 hasComment={hasComment}
+                comment={comment}
                 isCommentOpen={isCommentOpen}
+                isEditOpen={isEditOpen}
                 onOpenComment={handleOpenComment}
                 onCloseComment={handleCloseComment}
                 onAddComment={handleAddComment}
+                onEditComment={handleEditComment}
+                onCancelEdit={handleCancelEdit}
+                onUpdateComment={handleUpdateComment}
+                onDeleteComment={handleDeleteComment}
               />
             </div>
           )

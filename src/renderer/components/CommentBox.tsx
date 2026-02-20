@@ -1,15 +1,17 @@
 import React, { useRef, useEffect, useState } from 'react'
 
 interface CommentBoxProps {
+  initialText?: string
   onSubmit: (text: string) => void
   onCancel: () => void
 }
 
 const CommentBox = React.memo(function CommentBox({
+  initialText,
   onSubmit,
   onCancel,
 }: CommentBoxProps): React.ReactElement {
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText ?? '')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
