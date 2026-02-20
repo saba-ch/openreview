@@ -9,8 +9,22 @@ Started: Fri Feb 20 19:12:04 CET 2026
 - Use `electron-vite` for building: main/preload use SSR bundle mode, renderer uses standard Vite build
 - electron-vite renderer root is `src/renderer/` — `index.html` script src must be relative (`./main.tsx`), not absolute (`/src/renderer/main.tsx`)
 - `"type": "module"` in package.json is needed to avoid Node ESM warnings with `postcss.config.js`
-- Typecheck command: `tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json`
+- Typecheck command: run `bun run typecheck` (not `tsc` directly — bun resolves deps correctly)
 - Build output goes to `out/` (electron-vite default), not `dist/`
+- Zustand stores live in src/renderer/store/; use selector pattern `useStore(state => state.field)` for stable refs
+- useCommentsStore keys comments as `${filePath}:${lineNumber}`; getCommentsForFile/getComment use get() for current state
+
+## 2026-02-20 - US-004
+- Created src/renderer/store/repo.ts: useRepoStore with rootPath, files, selectedFile, isLoading + setters
+- Created src/renderer/store/comments.ts: useCommentsStore with comments record keyed by `${filePath}:${lineNumber}`
+- useCommentsStore exposes: addComment, updateComment, deleteComment, markOutdated, getCommentsForFile, getComment
+- Files changed: src/renderer/store/repo.ts, src/renderer/store/comments.ts
+- **Learnings for future iterations:**
+  - Run typecheck via `bun run typecheck` not raw `tsc` — bun resolves node_modules correctly for electron-vite projects
+  - Zustand v5 `create<State>((set, get) => ...)` — same API as v4 for basic stores
+  - getCommentsForFile and getComment are stable function refs that use get() internally; components must also subscribe to state.comments for reactivity
+  - deleteComment uses destructuring `const { [key]: _removed, ...rest } = state.comments` to omit a key cleanly
+---
 
 ## 2026-02-20 - US-003
 - Implemented git operations in Electron main process
