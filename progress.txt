@@ -1,4 +1,20 @@
 # Ralph Progress Log
+## 2026-02-20 - US-009
+- Created src/renderer/components/CommentBox.tsx: memoized component with textarea (autofocused via useEffect), Comment/Cancel buttons. Disabled submit when text is empty.
+- Updated src/renderer/components/DiffLine.tsx: added lineIndex, filePath, hasComment, isCommentOpen, onOpenComment, onCloseComment, onAddComment props. Hover group shows invisible '+' button that becomes visible on row hover. Speech-bubble icon (💬) replaces '+' when hasComment. CommentBox rendered below line when isCommentOpen. Hunk-header uses minHeight:22 instead of h-full (parent no longer has fixed height).
+- Updated src/renderer/components/DiffView.tsx: added openCommentIndex state, useEffect to reset on file change. Added measureElement option to virtualizer for dynamic row sizing. Removed fixed height from virtual item divs (now measured via ResizeObserver). Added data-index + ref={virtualizer.measureElement} to each row. Subscribes to comments state for hasComment lookup. Stable handleOpenComment/handleCloseComment/handleAddComment callbacks via useCallback.
+- Files changed: src/renderer/components/CommentBox.tsx, src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx
+- **Learnings for future iterations:**
+  - Remove fixed `height: virtualItem.size` from virtualizer row divs when using measureElement — let content height determine size; virtualizer measures via ResizeObserver
+  - Add `data-index={virtualItem.index}` and `ref={virtualizer.measureElement}` to each virtual row div for auto-measurement
+  - Also pass `measureElement: (el) => el.getBoundingClientRect().height` to useVirtualizer options
+  - Hunk-header rows used `h-full` which requires fixed-height parent — switch to `minHeight: 22` (inline style) when parent height is auto
+  - Use `useEffect(() => { resetState() }, [selectedFile])` to reset per-file state when file changes
+  - crypto.randomUUID() is available in renderer (DOM lib); no import needed
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+
 Started: Fri Feb 20 19:12:04 CET 2026
 ---
 
