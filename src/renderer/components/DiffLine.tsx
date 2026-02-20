@@ -18,6 +18,7 @@ interface DiffLineProps {
   onCancelEdit: () => void
   onUpdateComment: (id: string, text: string) => void
   onDeleteComment: (id: string) => void
+  unmodifiedCount?: number
 }
 
 const DiffLineComponent = React.memo(function DiffLineComponent({
@@ -36,6 +37,7 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
   onCancelEdit,
   onUpdateComment,
   onDeleteComment,
+  unmodifiedCount,
 }: DiffLineProps): React.ReactElement {
   if (line.type === 'hunk-header') {
     return (
@@ -43,7 +45,22 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
         className="flex items-center bg-diff-hunk px-4 font-mono text-[11px] text-diff-hunk-fg"
         style={{ minHeight: 20, borderTop: '1px solid var(--color-border-subtle)', borderBottom: '1px solid var(--color-border-subtle)' }}
       >
-        {line.content}
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="mr-1.5 shrink-0"
+        >
+          <path d="M2 4l3-3 3 3M5 1v8" />
+        </svg>
+        {unmodifiedCount != null
+          ? `${unmodifiedCount} unmodified lines`
+          : line.content}
       </div>
     )
   }
@@ -58,34 +75,27 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
       ? 'text-diff-remove-fg'
       : 'text-ink'
 
-  // Separate the diff marker (+/-/space) from the code content
-  const marker = line.content[0] ?? ' '
   const codeContent = line.content.slice(1)
 
   return (
-    <div className={`font-mono text-[11px] ${bgClass}`}>
+    <div
+      className={`font-mono text-[11px] ${bgClass}`}
+      style={{
+        borderLeft: isAdded
+          ? '3px solid var(--color-added-border)'
+          : isRemoved
+            ? '3px solid var(--color-removed-border)'
+            : '3px solid transparent',
+      }}
+    >
       {/* Main line row */}
       <div className="group flex items-center" style={{ minHeight: 20 }}>
         {/* Old line number */}
-        <div
-          className="w-9 shrink-0 select-none pr-1.5 text-right font-mono text-[10px] text-ink-ghost"
-          style={{
-            borderRight: isAdded
-              ? '1px solid rgba(87,201,143,0.12)'
-              : isRemoved
-                ? '1px solid rgba(224,108,117,0.12)'
-                : '1px solid var(--color-border-subtle)',
-          }}
-        >
+        <div className="w-8 shrink-0 select-none pr-1.5 text-right font-mono text-[10px] text-ink-ghost">
           {line.oldLineNumber ?? ''}
         </div>
         {/* New line number */}
-        <div
-          className="w-9 shrink-0 select-none pr-1.5 text-right font-mono text-[10px] text-ink-ghost"
-          style={{
-            borderRight: '1px solid var(--color-border-subtle)',
-          }}
-        >
+        <div className="w-8 shrink-0 select-none pr-1.5 text-right font-mono text-[10px] text-ink-ghost">
           {line.newLineNumber ?? ''}
         </div>
         {/* Gutter: comment button or indicator */}
@@ -107,10 +117,6 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
               +
             </button>
           )}
-        </div>
-        {/* Diff marker */}
-        <div className={`w-3.5 shrink-0 select-none ${textClass}`} style={{ opacity: 0.7 }}>
-          {marker}
         </div>
         {/* Content */}
         {highlightHtml ? (

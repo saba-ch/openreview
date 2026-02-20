@@ -4,30 +4,32 @@
 
 :root {
   /* Surface levels */
-  --color-base: #13141a;
-  --color-surface: #1a1b22;
-  --color-elevated: #1f2029;
-  --color-overlay: #252631;
-  --color-border: #2c2d3a;
-  --color-border-subtle: #1e1f2a;
+  --color-base: #1c1c1e;
+  --color-surface: #1e1e1e;
+  --color-elevated: #252525;
+  --color-overlay: #2d2d2d;
+  --color-border: #383838;
+  --color-border-subtle: #2c2c2c;
 
   /* Text */
-  --color-text-primary: #c8cdd8;
-  --color-text-secondary: #636879;
-  --color-text-muted: #3d4050;
+  --color-text-primary: #d4d4d4;
+  --color-text-secondary: #808080;
+  --color-text-muted: #505050;
 
   /* Accent — indigo */
-  --color-accent: #7c7ff7;
-  --color-accent-hover: #9fa2ff;
-  --color-accent-subtle: rgba(124, 127, 247, 0.12);
+  --color-accent: #6b7fff;
+  --color-accent-hover: #8b9bff;
+  --color-accent-subtle: rgba(107, 127, 255, 0.12);
 
   /* Diff */
-  --color-added-bg: #162318;
-  --color-added-text: #57c98f;
-  --color-removed-bg: #2a1215;
-  --color-removed-text: #e06c75;
-  --color-hunk-bg: #161a28;
-  --color-hunk-text: #4a5878;
+  --color-added-bg: #1a2e1e;
+  --color-added-text: #3fb950;
+  --color-added-border: #3fb950;
+  --color-removed-bg: #2d1515;
+  --color-removed-text: #f85149;
+  --color-removed-border: #f85149;
+  --color-hunk-bg: #242424;
+  --color-hunk-text: #666666;
 }
 
 html,
@@ -39,7 +41,7 @@ body,
 }
 
 body {
-  font-family: 'Manrope', sans-serif;
+  font-family: 'JetBrains Mono', monospace;
   background: var(--color-base);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;

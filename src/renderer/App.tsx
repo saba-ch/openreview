@@ -162,7 +162,7 @@ export default function App(): React.ReactElement {
           <div className="flex flex-1 flex-col items-center justify-center gap-3">
             <div
               className="h-7 w-7 rotate-45 rounded bg-accent opacity-15"
-              style={{ boxShadow: '0 0 20px rgba(124,127,247,0.25)' }}
+              style={{ boxShadow: '0 0 20px rgba(107,127,255,0.25)' }}
             />
             <p className="font-mono text-[11px] text-ink-ghost">open a folder to start reviewing</p>
           </div>

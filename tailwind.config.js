@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Manrope', 'sans-serif'],
+        sans: ['"JetBrains Mono"', 'monospace'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
@@ -25,6 +25,8 @@ export default {
         'diff-remove-fg': 'var(--color-removed-text)',
         'diff-hunk': 'var(--color-hunk-bg)',
         'diff-hunk-fg': 'var(--color-hunk-text)',
+        'diff-add-border': 'var(--color-added-border)',
+        'diff-remove-border': 'var(--color-removed-border)',
       },
     },
   },

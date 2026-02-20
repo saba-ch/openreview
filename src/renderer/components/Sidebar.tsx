@@ -13,10 +13,6 @@ function dirname(filePath: string): string {
   return parts.slice(0, -1).join('/')
 }
 
-type SidebarItem =
-  | { kind: 'header'; label: string; count: number }
-  | { kind: 'file'; file: DiffFile }
-
 interface SidebarProps {
   onRefreshDiff: () => Promise<void>
 }
@@ -28,6 +24,7 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
   const setSelectedFile = useRepoStore((state) => state.setSelectedFile)
 
   const [filter, setFilter] = useState('')
+  const [activeTab, setActiveTab] = useState<'unstaged' | 'staged'>('unstaged')
 
   const lowerFilter = filter.toLowerCase()
 
@@ -41,27 +38,14 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
     [files, lowerFilter]
   )
 
-  const items: SidebarItem[] = useMemo(() => {
-    const result: SidebarItem[] = []
-    result.push({ kind: 'header', label: 'Staged', count: stagedFiles.length })
-    for (const f of stagedFiles) result.push({ kind: 'file', file: f })
-    result.push({ kind: 'header', label: 'Unstaged', count: unstagedFiles.length })
-    for (const f of unstagedFiles) result.push({ kind: 'file', file: f })
-    return result
-  }, [stagedFiles, unstagedFiles])
-
-  const itemsRef = useRef<SidebarItem[]>([])
-  itemsRef.current = items
+  const activeFiles = activeTab === 'staged' ? stagedFiles : unstagedFiles
 
   const parentRef = useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
-    count: items.length,
+    count: activeFiles.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: useCallback(
-      (i: number) => (itemsRef.current[i]?.kind === 'header' ? 26 : 30),
-      []
-    ),
+    estimateSize: useCallback(() => 30, []),
   })
 
   const handleToggleStage = useCallback(
@@ -96,26 +80,53 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
 
   return (
     <div className="flex w-60 shrink-0 flex-col border-r border-line bg-elevated">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-line px-3" style={{ minHeight: 32 }}>
-        <span className="font-mono text-[10px] font-semibold uppercase text-ink-ghost" style={{ letterSpacing: '0.06em' }}>
-          FILES
-        </span>
-        <div className="flex gap-0.5">
-          <button
-            onClick={handleStageAll}
-            className="rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
-            title="Stage All"
-          >
-            +all
-          </button>
-          <button
-            onClick={handleUnstageAll}
-            className="rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
-            title="Unstage All"
-          >
-            -all
-          </button>
+      {/* Tab bar */}
+      <div className="flex shrink-0 items-stretch border-b border-line" style={{ minHeight: 34 }}>
+        <button
+          onClick={() => setActiveTab('unstaged')}
+          className={`flex flex-1 items-center justify-center gap-1.5 px-3 font-mono text-[11px] transition-colors ${
+            activeTab === 'unstaged'
+              ? 'border-b-2 border-accent text-ink'
+              : 'text-ink-ghost hover:text-ink-dim'
+          }`}
+        >
+          Unstaged
+          <span className="font-mono text-[10px] tabular-nums text-ink-ghost">
+            {unstagedFiles.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('staged')}
+          className={`flex flex-1 items-center justify-center gap-1.5 px-3 font-mono text-[11px] transition-colors ${
+            activeTab === 'staged'
+              ? 'border-b-2 border-accent text-ink'
+              : 'text-ink-ghost hover:text-ink-dim'
+          }`}
+        >
+          Staged
+          <span className="font-mono text-[10px] tabular-nums text-ink-ghost">
+            {stagedFiles.length}
+          </span>
+        </button>
+        {/* Stage / unstage all button */}
+        <div className="flex items-center pr-1.5">
+          {activeTab === 'unstaged' ? (
+            <button
+              onClick={handleStageAll}
+              className="rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
+              title="Stage All"
+            >
+              +all
+            </button>
+          ) : (
+            <button
+              onClick={handleUnstageAll}
+              className="rounded px-1.5 py-0.5 font-mono text-[9px] text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
+              title="Unstage All"
+            >
+              -all
+            </button>
+          )}
         </div>
       </div>
 
@@ -156,7 +167,7 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
           }}
         >
           {virtualizer.getVirtualItems().map((virtualItem) => {
-            const item = items[virtualItem.index]
+            const file = activeFiles[virtualItem.index]
             return (
               <div
                 key={virtualItem.key}
@@ -169,26 +180,15 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
                   transform: `translateY(${virtualItem.start}px)`,
                 }}
               >
-                {item.kind === 'header' ? (
-                  <div className="flex h-full items-center border-b border-line-subtle bg-base px-3">
-                    <span className="font-mono text-[9px] font-semibold uppercase text-ink-ghost" style={{ letterSpacing: '0.06em' }}>
-                      {item.label}
-                    </span>
-                    <span className="ml-auto font-mono text-[9px] tabular-nums text-ink-ghost">
-                      {item.count}
-                    </span>
-                  </div>
-                ) : (
-                  <FileRow
-                    file={item.file}
-                    isSelected={
-                      selectedFile?.filePath === item.file.filePath &&
-                      selectedFile?.staged === item.file.staged
-                    }
-                    onSelect={() => setSelectedFile(item.file)}
-                    onToggleStage={handleToggleStage}
-                  />
-                )}
+                <FileRow
+                  file={file}
+                  isSelected={
+                    selectedFile?.filePath === file.filePath &&
+                    selectedFile?.staged === file.staged
+                  }
+                  onSelect={() => setSelectedFile(file)}
+                  onToggleStage={handleToggleStage}
+                />
               </div>
             )
           })}

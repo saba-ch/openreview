@@ -73,17 +73,7 @@ export default function Toolbar({
   const isRepoLoaded = rootPath !== null
 
   return (
-    <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-line bg-elevated px-3">
-      {/* Brand */}
-      <div className="mr-2 flex items-center gap-1.5">
-        <div className="h-3 w-3 shrink-0 rotate-45 rounded-[2px] bg-accent" />
-        <span className="font-mono text-[11px] font-semibold text-ink-dim" style={{ letterSpacing: '0.01em' }}>
-          openreview
-        </span>
-      </div>
-
-      <div className="mx-1.5 h-3 w-px bg-line" />
-
+    <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-line bg-base px-3">
       {/* Primary action */}
       <button
         onClick={onOpenFolder}
