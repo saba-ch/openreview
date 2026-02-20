@@ -2,6 +2,19 @@
 Started: Fri Feb 20 19:12:04 CET 2026
 ---
 
+## 2026-02-20 - US-006
+- Created src/renderer/components/Sidebar.tsx: virtualized sidebar with Staged/Unstaged sections, filter input, Stage All/Unstage All buttons
+- FileRow component: checkbox for stage toggle, filename + dir, green additions / red deletions
+- Updated src/renderer/App.tsx: renders <Sidebar onRefreshDiff={handleRefresh} /> alongside main content area when repo is loaded
+- Files changed: src/renderer/components/Sidebar.tsx, src/renderer/App.tsx
+- **Learnings for future iterations:**
+  - @tanstack/react-virtual useVirtualizer: use `itemsRef` pattern (ref that mirrors memoized items) to keep `estimateSize` callback stable while accessing current items
+  - For checkbox toggling in a clickable row, use `onClick` (not `onChange`) on the checkbox with `e.stopPropagation()` to prevent row click handler from firing
+  - Still pass `onChange={() => {}}` to avoid React uncontrolled input warning when using `onClick` on checkbox
+  - Sidebar uses `window.electron.stageFile` / `window.electron.unstageFile` directly; calls `onRefreshDiff` (passed from App) to reload diff after each operation
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
 ## Codebase Patterns
 - preload/index.ts exposes IPC calls via contextBridge; renderer accesses them as `window.electron.*`
 - Declare `window.electron` types in src/renderer/electron.d.ts (included by tsconfig.web.json via `src/renderer/**/*`)
