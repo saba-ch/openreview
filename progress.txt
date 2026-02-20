@@ -9,6 +9,15 @@ Started: Fri Feb 20 19:12:04 CET 2026
 - Typecheck command: `tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json`
 - Build output goes to `out/` (electron-vite default), not `dist/`
 
+## 2026-02-20 - US-002
+- Populated src/shared/types.ts with all required exported types and IPC constants
+- Files changed: src/shared/types.ts
+- **Learnings for future iterations:**
+  - IPC channel constants are exported as `as const` strings, not enums
+  - DiffLine.type uses a string union, not an enum
+  - All downstream stories (US-003+) can import types from src/shared/types.ts
+---
+
 ## 2026-02-20 - US-001
 - Scaffolded Electron + React + Bun + Tailwind project from scratch
 - Created: package.json, bunfig.toml, electron.vite.config.ts, tsconfig.json, tsconfig.node.json, tsconfig.web.json, tailwind.config.js, postcss.config.js
