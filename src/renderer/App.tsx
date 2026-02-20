@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import Toolbar from './components/Toolbar'
 import Sidebar from './components/Sidebar'
+import DiffView from './components/DiffView'
 import { useRepoStore } from './store/repo'
 
 export default function App(): React.ReactElement {
@@ -68,9 +69,7 @@ export default function App(): React.ReactElement {
         ) : (
           <>
             <Sidebar onRefreshDiff={handleRefresh} />
-            <div className="flex flex-1 items-center justify-center">
-              <p className="text-gray-500">Select a file to view its diff</p>
-            </div>
+            <DiffView />
           </>
         )}
       </main>
