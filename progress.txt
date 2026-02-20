@@ -1,4 +1,17 @@
 # Ralph Progress Log
+## 2026-02-20 - US-010
+- Updated src/renderer/components/CommentBox.tsx: added `initialText?: string` prop; initializes textarea state with `initialText ?? ''` for pre-filling in edit mode.
+- Updated src/renderer/components/DiffLine.tsx: added `comment?: Comment`, `isEditOpen`, `onEditComment`, `onCancelEdit`, `onUpdateComment`, `onDeleteComment` props. Renders inline comment display (always visible) when `comment` exists and `!isEditOpen` — shows text, Edit button, Delete button. Outdated comments get amber border + 'Outdated' label. Edit button opens CommentBox pre-filled via `initialText`. Delete button calls `onDeleteComment(comment.id)`. CommentBox for new comment now guarded by `!comment && isCommentOpen`.
+- Updated src/renderer/components/DiffView.tsx: subscribed to `updateComment` and `deleteComment` from store; added `editCommentIndex` state; reset `editCommentIndex` on file change via useEffect; added `handleEditComment`, `handleCancelEdit`, `handleUpdateComment`, `handleDeleteComment` callbacks; passes `comment` object and new props to DiffLineComponent.
+- Files changed: src/renderer/components/CommentBox.tsx, src/renderer/components/DiffLine.tsx, src/renderer/components/DiffView.tsx
+- **Learnings for future iterations:**
+  - Guard new-comment CommentBox with `!comment && isCommentOpen` — prevents add-box opening when a comment already exists on that line
+  - Pass the full `Comment` object (not just boolean) to DiffLine so it can render text and pass `comment.id` to update/delete handlers
+  - `editCommentIndex` mirrors `openCommentIndex` pattern — same reset-on-file-change useEffect handles both
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
+
 ## 2026-02-20 - US-009
 - Created src/renderer/components/CommentBox.tsx: memoized component with textarea (autofocused via useEffect), Comment/Cancel buttons. Disabled submit when text is empty.
 - Updated src/renderer/components/DiffLine.tsx: added lineIndex, filePath, hasComment, isCommentOpen, onOpenComment, onCloseComment, onAddComment props. Hover group shows invisible '+' button that becomes visible on row hover. Speech-bubble icon (💬) replaces '+' when hasComment. CommentBox rendered below line when isCommentOpen. Hunk-header uses minHeight:22 instead of h-full (parent no longer has fixed height).
