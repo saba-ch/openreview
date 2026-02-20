@@ -1,4 +1,19 @@
 # Ralph Progress Log
+## 2026-02-20 - US-011
+- Added `CLIPBOARD_WRITE = 'clipboard:write'` IPC constant to src/shared/types.ts
+- Updated src/main/index.ts: imported `clipboard` from electron, registered ipcMain handler for CLIPBOARD_WRITE using `clipboard.writeText(text)`
+- Updated src/preload/index.ts: exposed `writeClipboard(text: string)` via contextBridge
+- Updated src/renderer/electron.d.ts: added `writeClipboard(text: string): Promise<void>` to Window.electron type
+- Updated src/renderer/App.tsx: subscribed to `comments` from useCommentsStore, computed `hasComments`, implemented `handleCopyReview` (sorts by filePath then lineNumber, formats as `<filePath>:<lineNumber> — "<text>"` with `[OUTDATED]` prefix, calls `window.electron.writeClipboard`, shows toast for 2s via `toastVisible` state), rendered fixed-position toast div
+- Updated src/renderer/components/Toolbar.tsx: added `hasComments: boolean` prop; Copy Review button disabled when `!hasComments` (not just when repo not loaded)
+- Files changed: src/shared/types.ts, src/main/index.ts, src/preload/index.ts, src/renderer/electron.d.ts, src/renderer/App.tsx, src/renderer/components/Toolbar.tsx
+- **Learnings for future iterations:**
+  - Use Electron's `clipboard` module in main process (not renderer) — expose via IPC + contextBridge
+  - Toast is simplest as a fixed-position div with `pointer-events-none` toggled by a boolean state + `setTimeout` to auto-dismiss
+  - Copy Review button disabled state is independent of isRepoLoaded — it depends on comment count, so pass `hasComments` prop from App rather than computing inside Toolbar
+  - Browser verification skipped (no browser MCP tool configured)
+---
+
 ## 2026-02-20 - US-010
 - Updated src/renderer/components/CommentBox.tsx: added `initialText?: string` prop; initializes textarea state with `initialText ?? ''` for pre-filling in edit mode.
 - Updated src/renderer/components/DiffLine.tsx: added `comment?: Comment`, `isEditOpen`, `onEditComment`, `onCancelEdit`, `onUpdateComment`, `onDeleteComment` props. Renders inline comment display (always visible) when `comment` exists and `!isEditOpen` — shows text, Edit button, Delete button. Outdated comments get amber border + 'Outdated' label. Edit button opens CommentBox pre-filled via `initialText`. Delete button calls `onDeleteComment(comment.id)`. CommentBox for new comment now guarded by `!comment && isCommentOpen`.
