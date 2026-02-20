@@ -14,7 +14,7 @@ function dirname(filePath: string): string {
 }
 
 type SidebarItem =
-  | { kind: 'header'; label: string }
+  | { kind: 'header'; label: string; count: number }
   | { kind: 'file'; file: DiffFile }
 
 interface SidebarProps {
@@ -43,9 +43,9 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
 
   const items: SidebarItem[] = useMemo(() => {
     const result: SidebarItem[] = []
-    result.push({ kind: 'header', label: `Staged (${stagedFiles.length})` })
+    result.push({ kind: 'header', label: 'Staged', count: stagedFiles.length })
     for (const f of stagedFiles) result.push({ kind: 'file', file: f })
-    result.push({ kind: 'header', label: `Unstaged (${unstagedFiles.length})` })
+    result.push({ kind: 'header', label: 'Unstaged', count: unstagedFiles.length })
     for (const f of unstagedFiles) result.push({ kind: 'file', file: f })
     return result
   }, [stagedFiles, unstagedFiles])
@@ -59,7 +59,7 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: useCallback(
-      (i: number) => (itemsRef.current[i]?.kind === 'header' ? 28 : 36),
+      (i: number) => (itemsRef.current[i]?.kind === 'header' ? 30 : 38),
       []
     ),
   })
@@ -95,21 +95,26 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
   }, [rootPath, stagedFiles, onRefreshDiff])
 
   return (
-    <div className="flex w-64 shrink-0 flex-col border-r border-gray-800 bg-gray-900">
+    <div className="flex w-64 shrink-0 flex-col border-r border-line bg-elevated">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Files</span>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between border-b border-line px-3 py-2">
+        <span
+          className="text-[10px] font-semibold uppercase tracking-widest text-ink-ghost"
+          style={{ letterSpacing: '0.08em' }}
+        >
+          Files
+        </span>
+        <div className="flex gap-0.5">
           <button
             onClick={handleStageAll}
-            className="rounded px-2 py-0.5 text-xs text-gray-400 hover:bg-gray-700 hover:text-gray-100"
+            className="rounded px-2 py-0.5 text-[10px] font-medium text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
             title="Stage All"
           >
             Stage All
           </button>
           <button
             onClick={handleUnstageAll}
-            className="rounded px-2 py-0.5 text-xs text-gray-400 hover:bg-gray-700 hover:text-gray-100"
+            className="rounded px-2 py-0.5 text-[10px] font-medium text-ink-ghost transition-colors hover:bg-overlay hover:text-ink-dim"
             title="Unstage All"
           >
             Unstage All
@@ -118,14 +123,30 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
       </div>
 
       {/* Filter input */}
-      <div className="border-b border-gray-800 px-3 py-2">
-        <input
-          type="text"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter files..."
-          className="w-full rounded bg-gray-800 px-2 py-1 text-xs text-gray-100 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500"
-        />
+      <div className="border-b border-line px-3 py-2">
+        <div className="relative">
+          <svg
+            className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-ink-ghost"
+            width="11"
+            height="11"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="5" cy="5" r="3.5" />
+            <path d="M8 8l2.5 2.5" />
+          </svg>
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter files…"
+            className="w-full rounded-md border border-line-subtle bg-surface py-1 pl-6 pr-2 text-xs text-ink placeholder-ink-ghost outline-none transition-colors focus:border-accent focus:ring-0"
+          />
+        </div>
       </div>
 
       {/* Virtual list */}
@@ -152,8 +173,16 @@ export default function Sidebar({ onRefreshDiff }: SidebarProps): React.ReactEle
                 }}
               >
                 {item.kind === 'header' ? (
-                  <div className="flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {item.label}
+                  <div className="flex h-full items-center px-3">
+                    <span
+                      className="text-[10px] font-semibold uppercase text-ink-ghost"
+                      style={{ letterSpacing: '0.07em' }}
+                    >
+                      {item.label}
+                    </span>
+                    <span className="ml-auto rounded border border-line-subtle bg-surface px-1.5 font-mono text-[9px] tabular-nums text-ink-dim">
+                      {item.count}
+                    </span>
                   </div>
                 ) : (
                   <FileRow
@@ -189,8 +218,10 @@ function FileRow({ file, isSelected, onSelect, onToggleStage }: FileRowProps): R
   return (
     <div
       onClick={onSelect}
-      className={`flex h-full cursor-pointer items-center gap-2 px-3 text-xs hover:bg-gray-800 ${
-        isSelected ? 'bg-gray-800 text-gray-100' : 'text-gray-300'
+      className={`flex h-full cursor-pointer items-center gap-2 border-l-2 px-3 text-xs transition-colors ${
+        isSelected
+          ? 'border-accent bg-overlay text-ink'
+          : 'border-transparent hover:bg-overlay text-ink-dim'
       }`}
     >
       <input
@@ -198,15 +229,23 @@ function FileRow({ file, isSelected, onSelect, onToggleStage }: FileRowProps): R
         checked={file.staged}
         onChange={() => {}}
         onClick={(e) => onToggleStage(file, e)}
-        className="h-3 w-3 shrink-0 cursor-pointer accent-blue-500"
+        className="h-3 w-3 shrink-0 cursor-pointer accent-accent"
       />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{name}</div>
-        {dir && <div className="truncate text-gray-500">{dir}</div>}
+        <div className={`truncate font-medium ${isSelected ? 'text-ink' : 'text-ink-dim'}`}>
+          {name}
+        </div>
+        {dir && (
+          <div className="truncate font-mono text-[10px] text-ink-ghost">{dir}</div>
+        )}
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5 text-xs">
-        {file.additions > 0 && <span className="text-green-400">+{file.additions}</span>}
-        {file.deletions > 0 && <span className="text-red-400">-{file.deletions}</span>}
+      <div className="flex shrink-0 flex-col items-end gap-0.5 font-mono">
+        {file.additions > 0 && (
+          <span className="text-[10px] text-diff-add-fg">+{file.additions}</span>
+        )}
+        {file.deletions > 0 && (
+          <span className="text-[10px] text-diff-remove-fg">-{file.deletions}</span>
+        )}
       </div>
     </div>
   )

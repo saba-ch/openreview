@@ -93,7 +93,7 @@ export default function DiffView(): React.ReactElement {
   if (!selectedFile || selectedFile.hunks.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-gray-500">No changes</p>
+        <p className="text-ink-ghost text-sm">No changes</p>
       </div>
     )
   }
@@ -101,7 +101,7 @@ export default function DiffView(): React.ReactElement {
   const filePath = selectedFile.filePath
 
   return (
-    <div ref={parentRef} className="flex-1 overflow-x-auto overflow-y-auto bg-gray-950">
+    <div ref={parentRef} className="flex-1 overflow-x-auto overflow-y-auto bg-base">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,

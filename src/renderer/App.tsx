@@ -116,28 +116,55 @@ export default function App(): React.ReactElement {
   }, [comments])
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-gray-950 text-gray-100">
+    <div className="flex h-screen w-screen flex-col bg-base text-ink">
       <Toolbar
         onOpenFolder={handleOpenFolder}
         onRefresh={handleRefresh}
         onCopyReview={handleCopyReview}
         hasComments={hasComments}
       />
+
+      {/* Toast */}
       {toastVisible && (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 rounded bg-gray-700 px-4 py-2 text-sm text-white shadow-lg">
+        <div
+          className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg border border-line bg-elevated px-4 py-2.5 text-xs font-medium text-ink shadow-xl"
+          style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--color-border)' }}
+        >
+          <span className="mr-2 text-accent">✓</span>
           Review copied to clipboard
         </div>
       )}
+
       <main className="flex flex-1 overflow-hidden">
         {isLoading ? (
           <LoadingSkeleton />
         ) : error ? (
           <div className="flex flex-1 items-center justify-center">
-            <p className="text-red-400">{error}</p>
+            <div className="flex items-center gap-2 rounded-lg border border-red-900/40 bg-red-950/20 px-4 py-3 text-sm text-red-400">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="7" cy="7" r="5.5" />
+                <path d="M7 4.5v3" />
+                <path d="M7 9.5v.5" />
+              </svg>
+              {error}
+            </div>
           </div>
         ) : !rootPath ? (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-gray-500">Open a folder to start reviewing</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3">
+            <div
+              className="h-8 w-8 rotate-45 rounded-md bg-accent opacity-20"
+              style={{ boxShadow: '0 0 24px rgba(99,102,241,0.3)' }}
+            />
+            <p className="text-sm text-ink-ghost">Open a folder to start reviewing</p>
           </div>
         ) : (
           <>
@@ -152,12 +179,12 @@ export default function App(): React.ReactElement {
 
 function LoadingSkeleton(): React.ReactElement {
   return (
-    <div className="flex flex-1 flex-col gap-3 p-6">
+    <div className="flex flex-1 flex-col gap-2.5 p-6">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
-          className="h-4 animate-pulse rounded bg-gray-800"
-          style={{ width: `${60 + (i % 3) * 15}%` }}
+          className="h-3.5 animate-pulse rounded-md bg-elevated"
+          style={{ width: `${55 + (i % 3) * 15}%` }}
         />
       ))}
     </div>

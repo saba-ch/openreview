@@ -40,27 +40,23 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
   if (line.type === 'hunk-header') {
     return (
       <div
-        className="flex items-center bg-gray-800 px-4 font-mono text-xs text-gray-400"
-        style={{ minHeight: 22 }}
+        className="flex items-center bg-diff-hunk px-4 font-mono text-xs text-diff-hunk-fg"
+        style={{ minHeight: 26, borderTop: '1px solid var(--color-border-subtle)', borderBottom: '1px solid var(--color-border-subtle)' }}
       >
         {line.content}
       </div>
     )
   }
 
-  const bgClass =
-    line.type === 'added'
-      ? 'bg-green-950'
-      : line.type === 'removed'
-        ? 'bg-red-950'
-        : ''
+  const isAdded = line.type === 'added'
+  const isRemoved = line.type === 'removed'
 
-  const textClass =
-    line.type === 'added'
-      ? 'text-green-200'
-      : line.type === 'removed'
-        ? 'text-red-200'
-        : 'text-gray-300'
+  const bgClass = isAdded ? 'bg-diff-add' : isRemoved ? 'bg-diff-remove' : ''
+  const textClass = isAdded
+    ? 'text-diff-add-fg'
+    : isRemoved
+      ? 'text-diff-remove-fg'
+      : 'text-ink'
 
   // Separate the diff marker (+/-/space) from the code content
   const marker = line.content[0] ?? ' '
@@ -69,24 +65,42 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
   return (
     <div className={`font-mono text-xs ${bgClass}`}>
       {/* Main line row */}
-      <div className="group flex items-center" style={{ minHeight: 22 }}>
+      <div className="group flex items-center" style={{ minHeight: 26 }}>
         {/* Old line number */}
-        <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
+        <div
+          className="w-11 shrink-0 select-none pr-2 text-right font-mono text-[11px] text-ink-ghost"
+          style={{
+            borderRight: isAdded
+              ? '1px solid rgba(74,222,128,0.12)'
+              : isRemoved
+                ? '1px solid rgba(248,113,113,0.12)'
+                : '1px solid var(--color-border-subtle)',
+          }}
+        >
           {line.oldLineNumber ?? ''}
         </div>
         {/* New line number */}
-        <div className="w-12 shrink-0 select-none pr-2 text-right font-mono text-gray-600">
+        <div
+          className="w-11 shrink-0 select-none pr-2 text-right font-mono text-[11px] text-ink-ghost"
+          style={{
+            borderRight: '1px solid var(--color-border-subtle)',
+          }}
+        >
           {line.newLineNumber ?? ''}
         </div>
-        {/* Gutter: '+' button or speech-bubble icon */}
-        <div className="flex w-6 shrink-0 select-none items-center justify-center">
+        {/* Gutter: comment button or indicator */}
+        <div className="flex w-7 shrink-0 select-none items-center justify-center">
           {hasComment ? (
-            <span className="text-[10px] text-blue-400" title="Has comment">
-              💬
+            <span
+              className="text-[9px] text-accent opacity-90"
+              title="Has comment"
+              style={{ lineHeight: 1 }}
+            >
+              ●
             </span>
           ) : (
             <button
-              className="invisible flex h-4 w-4 items-center justify-center rounded text-xs leading-none text-gray-500 hover:bg-gray-700 hover:text-gray-200 group-hover:visible"
+              className="invisible flex h-4 w-4 items-center justify-center rounded text-[11px] leading-none text-ink-ghost transition-colors hover:bg-overlay hover:text-ink group-hover:visible"
               onClick={() => onOpenComment(lineIndex)}
               title="Add comment"
             >
@@ -95,51 +109,58 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
           )}
         </div>
         {/* Diff marker */}
-        <div className={`w-4 shrink-0 select-none ${textClass}`}>{marker}</div>
-        {/* Content: highlighted HTML or plain text fallback */}
+        <div className={`w-3.5 shrink-0 select-none ${textClass}`} style={{ opacity: 0.7 }}>
+          {marker}
+        </div>
+        {/* Content */}
         {highlightHtml ? (
           <div
-            className="flex-1 overflow-hidden whitespace-pre"
+            className="flex-1 overflow-hidden whitespace-pre px-1"
             dangerouslySetInnerHTML={{ __html: highlightHtml }}
           />
         ) : (
-          <div className={`flex-1 overflow-hidden whitespace-pre ${textClass}`}>
+          <div className={`flex-1 overflow-hidden whitespace-pre px-1 ${textClass}`}>
             {codeContent}
           </div>
         )}
       </div>
-      {/* Inline comment display (always visible when comment exists and not editing) */}
+
+      {/* Inline comment display */}
       {comment && !isEditOpen && (
         <div
-          className={`m-1 rounded border p-2 text-xs ${
+          className={`mx-2 mb-1.5 rounded-lg border p-3 text-xs ${
             comment.outdated
-              ? 'border-amber-500 bg-amber-950/30'
-              : 'border-gray-700 bg-gray-900'
+              ? 'border-amber-800/60 bg-amber-950/20'
+              : 'border-line bg-surface'
           }`}
+          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}
         >
           {comment.outdated && (
-            <span className="mb-1 block font-sans text-xs font-medium text-amber-400">
+            <span className="mb-1.5 block font-sans text-[10px] font-semibold uppercase tracking-wide text-amber-400/80">
               Outdated
             </span>
           )}
-          <p className="whitespace-pre-wrap font-mono text-gray-200">{comment.text}</p>
-          <div className="mt-1 flex gap-2">
+          <p className="whitespace-pre-wrap font-mono text-[11px] text-ink leading-relaxed">
+            {comment.text}
+          </p>
+          <div className="mt-2.5 flex gap-1.5">
             <button
               onClick={() => onEditComment(lineIndex)}
-              className="rounded bg-gray-700 px-3 py-1 text-xs text-gray-200 hover:bg-gray-600"
+              className="rounded-md border border-line bg-elevated px-2.5 py-1 text-[11px] font-medium text-ink-dim transition-colors hover:bg-overlay hover:text-ink"
             >
               Edit
             </button>
             <button
               onClick={() => onDeleteComment(comment.id)}
-              className="rounded bg-red-900/50 px-3 py-1 text-xs text-red-300 hover:bg-red-900"
+              className="rounded-md border border-red-900/50 bg-red-950/30 px-2.5 py-1 text-[11px] font-medium text-red-400/80 transition-colors hover:bg-red-950/60 hover:text-red-300"
             >
               Delete
             </button>
           </div>
         </div>
       )}
-      {/* CommentBox for editing an existing comment */}
+
+      {/* CommentBox for editing */}
       {comment && isEditOpen && (
         <CommentBox
           initialText={comment.text}
@@ -147,7 +168,8 @@ const DiffLineComponent = React.memo(function DiffLineComponent({
           onCancel={onCancelEdit}
         />
       )}
-      {/* CommentBox for adding a new comment */}
+
+      {/* CommentBox for adding */}
       {!comment && isCommentOpen && (
         <CommentBox
           onSubmit={(text) => onAddComment(filePath, line.lineNumber, text)}

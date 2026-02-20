@@ -19,28 +19,33 @@ const CommentBox = React.memo(function CommentBox({
   }, [])
 
   return (
-    <div className="m-1 rounded border border-gray-700 bg-gray-900 p-2">
+    <div
+      className="mx-2 mb-2 rounded-lg border border-line bg-surface p-3"
+      style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.35), 0 0 0 1px var(--color-border-subtle)' }}
+    >
       <textarea
         ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
-        placeholder="Add a comment..."
-        className="w-full resize-none rounded border border-gray-600 bg-gray-800 p-2 font-mono text-xs text-gray-200 focus:border-blue-500 focus:outline-none"
+        placeholder="Add a comment…"
+        className="w-full resize-none rounded-md border border-line-subtle bg-elevated p-2.5 font-mono text-xs text-ink placeholder-ink-ghost outline-none transition-colors focus:border-accent"
+        style={{ lineHeight: '1.6' }}
       />
-      <div className="mt-1 flex gap-2">
+      <div className="mt-2 flex gap-1.5">
         <button
           onClick={() => {
             if (text.trim()) onSubmit(text.trim())
           }}
           disabled={!text.trim()}
-          className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-accent-hi active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
         >
           Comment
         </button>
         <button
           onClick={onCancel}
-          className="rounded bg-gray-700 px-3 py-1 text-xs text-gray-200 hover:bg-gray-600"
+          className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-dim transition-colors hover:bg-elevated hover:text-ink"
         >
           Cancel
         </button>
