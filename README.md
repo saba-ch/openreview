@@ -67,7 +67,6 @@ Add to `.cursor/mcp.json` in your project (or globally in `~/.cursor/mcp.json`):
 
 | Tool | Description |
 |---|---|
-| `get_diff` | Returns the current git diff. Optional `filePath` filter. |
 | `get_comments` | Returns all review comments. Optional `filePath` filter. |
 | `add_comment` | Adds an inline comment to a diff line by `lineRef`. |
 | `update_comment` | Edits the text of an existing comment by `id`. |
@@ -78,14 +77,6 @@ Add to `.cursor/mcp.json` in your project (or globally in `~/.cursor/mcp.json`):
 | URI | Description |
 |---|---|
 | `comments://all` | Live snapshot of all current comments (subscribable). |
-| `diff://current` | Current diff cached from the last `get_diff` call. |
-
-### Prompts
-
-| Prompt | Description |
-|---|---|
-| `review_file` | Fills a prompt with the diff and existing comments for a specific file. |
-| `summarize_review` | Fills a prompt asking for a summary of all comments grouped by file. |
 
 ---
 

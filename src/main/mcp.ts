@@ -5,9 +5,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod'
 import type { BrowserWindow } from 'electron'
 import { mainStore } from './store.js'
-import { getRepoDiff } from './git.js'
 import { MCP_ADD_COMMENT, MCP_DELETE_COMMENT, MCP_UPDATE_COMMENT } from '../shared/types.js'
-import type { Comment, DiffFile, DiffLine } from '../shared/types.js'
+import type { Comment } from '../shared/types.js'
 
 const MCP_PORT = 27182
 
@@ -51,53 +50,10 @@ function internalToLineRef(filePath: string, internalLineNumber: number): number
   return null
 }
 
-function buildDiffResponse(files: DiffFile[]) {
-  return files.map((file) => ({
-    filePath: file.filePath,
-    oldFilePath: file.oldFilePath,
-    additions: file.additions,
-    deletions: file.deletions,
-    staged: file.staged,
-    hunks: file.hunks.map((hunk) => ({
-      header: hunk.header,
-      lines: hunk.lines.map((line: DiffLine) => ({
-        lineRef: line.newLineNumber ?? line.oldLineNumber,
-        oldLineNumber: line.oldLineNumber,
-        newLineNumber: line.newLineNumber,
-        type: line.type,
-        content: line.content,
-      })),
-    })),
-  }))
-}
-
 function createMcpServer(getWindow: () => BrowserWindow | null): McpServer {
   const server = new McpServer({ name: 'openreview', version: '1.0.0' })
 
   // ── Tools ──────────────────────────────────────────────────────────────
-
-  server.registerTool(
-    'get_diff',
-    {
-      description: 'Get the current git diff (staged + unstaged). Returns diff lines with lineRef (real file line number).',
-      inputSchema: {
-        filePath: z.string().optional().describe('Filter to a specific file path (optional)'),
-      },
-    },
-    async (args) => {
-      if (!mainStore.rootPath) {
-        return { content: [{ type: 'text', text: 'No repository open. Open a folder in the app first.' }] }
-      }
-      try {
-        const diff = await getRepoDiff(mainStore.rootPath)
-        mainStore.diffCache = diff
-        const filtered = args.filePath ? diff.filter((f) => f.filePath === args.filePath) : diff
-        return { content: [{ type: 'text', text: JSON.stringify(buildDiffResponse(filtered), null, 2) }] }
-      } catch (err) {
-        return { content: [{ type: 'text', text: `Error: ${String(err)}` }] }
-      }
-    }
-  )
 
   server.registerTool(
     'get_comments',
@@ -214,60 +170,6 @@ function createMcpServer(getWindow: () => BrowserWindow | null): McpServer {
       }))
       return {
         contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(comments, null, 2) }],
-      }
-    }
-  )
-
-  server.registerResource(
-    'diff://current',
-    'diff://current',
-    { description: 'Current git diff (staged + unstaged) for the open repository.' },
-    async (uri) => {
-      const diff = mainStore.diffCache ?? []
-      return {
-        contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(buildDiffResponse(diff), null, 2) }],
-      }
-    }
-  )
-
-  // ── Prompts ────────────────────────────────────────────────────────────
-
-  server.registerPrompt(
-    'review_file',
-    {
-      description: 'Generate a thorough code review for a specific file in the diff.',
-      argsSchema: { filePath: z.string().describe('The file to review') },
-    },
-    async ({ filePath }) => {
-      const diff = (mainStore.diffCache ?? []).find((f) => f.filePath === filePath)
-      const comments = Object.values(mainStore.comments).filter((c) => c.filePath === filePath)
-      return {
-        messages: [{
-          role: 'user',
-          content: {
-            type: 'text',
-            text: `Review this file from the git diff:\n\nFile: ${filePath}\n\nDiff:\n${JSON.stringify(diff, null, 2)}\n\nExisting comments:\n${JSON.stringify(comments, null, 2)}\n\nProvide a thorough code review. Add comments using add_comment for any issues found.`,
-          },
-        }],
-      }
-    }
-  )
-
-  server.registerPrompt(
-    'summarize_review',
-    {
-      description: 'Summarize all comments across the review.',
-    },
-    async () => {
-      const comments = Object.values(mainStore.comments)
-      return {
-        messages: [{
-          role: 'user',
-          content: {
-            type: 'text',
-            text: `Summarize the following code review comments grouped by file:\n\n${JSON.stringify(comments, null, 2)}`,
-          },
-        }],
       }
     }
   )
