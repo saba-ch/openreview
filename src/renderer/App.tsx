@@ -92,7 +92,7 @@ export default function App(): React.ReactElement {
     })
   }, [])
 
-  // Listen for MCP-pushed add/delete and update Zustand
+  // Listen for MCP-pushed add/delete/update and sync to Zustand
   useEffect(() => {
     const unsubAdd = window.electron.onMcpAddComment((comment) => {
       useCommentsStore.getState().addComment(comment)
@@ -100,7 +100,10 @@ export default function App(): React.ReactElement {
     const unsubDel = window.electron.onMcpDeleteComment((id) => {
       useCommentsStore.getState().deleteComment(id)
     })
-    return () => { unsubAdd(); unsubDel() }
+    const unsubUpdate = window.electron.onMcpUpdateComment((id, text) => {
+      useCommentsStore.getState().updateComment(id, text)
+    })
+    return () => { unsubAdd(); unsubDel(); unsubUpdate() }
   }, [])
 
   // Cmd+R / Ctrl+R keyboard shortcut for refresh

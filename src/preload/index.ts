@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
-import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE, SYNC_COMMENTS, MCP_ADD_COMMENT, MCP_DELETE_COMMENT } from '../shared/types.js'
+import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE, SYNC_COMMENTS, MCP_ADD_COMMENT, MCP_DELETE_COMMENT, MCP_UPDATE_COMMENT } from '../shared/types.js'
 import type { DiffFile, Comment } from '../shared/types.js'
 
 contextBridge.exposeInMainWorld('electron', {
@@ -31,5 +31,11 @@ contextBridge.exposeInMainWorld('electron', {
     const h = (_e: IpcRendererEvent, id: string) => cb(id)
     ipcRenderer.on(MCP_DELETE_COMMENT, h)
     return () => ipcRenderer.removeListener(MCP_DELETE_COMMENT, h)
+  },
+
+  onMcpUpdateComment: (cb: (id: string, text: string) => void): (() => void) => {
+    const h = (_e: IpcRendererEvent, payload: { id: string; text: string }) => cb(payload.id, payload.text)
+    ipcRenderer.on(MCP_UPDATE_COMMENT, h)
+    return () => ipcRenderer.removeListener(MCP_UPDATE_COMMENT, h)
   },
 })

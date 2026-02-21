@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useCallback } from 'react'
 import { useRepoStore } from '../store/repo'
 
 interface ToolbarProps {
@@ -63,6 +63,26 @@ function CopyIcon() {
   )
 }
 
+function LinkIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 14 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5.5 8.5a3.5 3.5 0 0 0 4.95 0l2-2a3.5 3.5 0 0 0-4.95-4.95l-1 1" />
+      <path d="M8.5 5.5a3.5 3.5 0 0 0-4.95 0l-2 2a3.5 3.5 0 0 0 4.95 4.95l1-1" />
+    </svg>
+  )
+}
+
+const MCP_URL = 'http://127.0.0.1:27182/mcp'
+
 export default function Toolbar({
   onOpenFolder,
   onRefresh,
@@ -71,6 +91,13 @@ export default function Toolbar({
 }: ToolbarProps): React.ReactElement {
   const rootPath = useRepoStore((state) => state.rootPath)
   const isRepoLoaded = rootPath !== null
+  const [mcpCopied, setMcpCopied] = useState(false)
+
+  const handleCopyMcpUrl = useCallback(async () => {
+    await window.electron.writeClipboard(MCP_URL)
+    setMcpCopied(true)
+    setTimeout(() => setMcpCopied(false), 1500)
+  }, [])
 
   return (
     <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-line bg-base px-3">
@@ -102,14 +129,23 @@ export default function Toolbar({
         copy review
       </button>
 
-      {/* Repo path */}
-      {rootPath && (
-        <div className="ml-auto flex items-center gap-1 overflow-hidden">
+      {/* MCP URL copy + repo path — right-aligned */}
+      <div className="ml-auto flex items-center gap-3">
+        <button
+          onClick={handleCopyMcpUrl}
+          title={`Copy MCP URL: ${MCP_URL}`}
+          className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 font-mono text-[11px] text-ink-ghost transition-all hover:bg-overlay hover:text-ink"
+        >
+          <LinkIcon />
+          {mcpCopied ? 'copied!' : 'mcp url'}
+        </button>
+
+        {rootPath && (
           <span className="truncate font-mono text-[10px] text-ink-ghost" style={{ maxWidth: 320 }}>
             {rootPath}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

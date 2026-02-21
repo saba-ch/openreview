@@ -3,7 +3,7 @@ import { join } from 'path'
 import { getRepoDiff, stageFile, unstageFile } from './git.js'
 import { GIT_DIFF, GIT_STAGE, GIT_UNSTAGE, OPEN_DIALOG, CLIPBOARD_WRITE, SYNC_COMMENTS } from '../shared/types.js'
 import { mainStore } from './store.js'
-import { startMcpServer } from './mcp.js'
+import { startMcpServer, notifyCommentChange } from './mcp.js'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -33,6 +33,7 @@ function registerIpcHandlers(): void {
 
   ipcMain.on(SYNC_COMMENTS, (_event, comments) => {
     mainStore.comments = comments
+    notifyCommentChange()
   })
 
   ipcMain.handle(GIT_STAGE, (_event, rootPath: string, filePath: string) => {
